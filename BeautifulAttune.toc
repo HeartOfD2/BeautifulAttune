@@ -1,0 +1,43 @@
+## Interface: 16001
+## Title: BeautifulAttune
+## Title-deDE: BeautifulAttune
+## Notes: A modern, searchable look for the Attune addon. EllesmereUI is optional.
+## Notes-deDE: Ein modernes, durchsuchbares Aussehen für das Addon Attune. EllesmereUI ist optional.
+## Author: HeartOfD2
+## Version: 0.1.0
+## X-Website: https://github.com/HeartOfD2/BeautifulAttune
+## X-Curse-Project-ID: 1754752
+## Category: Quests
+## Category-deDE: Quests
+## IconTexture: Interface\AddOns\BeautifulAttune\Media\Icon
+## Dependencies: Attune
+## OptionalDeps: EllesmereUI
+## SavedVariables: BeautifulAttuneDB
+## AddonCompartmentFunc: BeautifulAttune_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: BeautifulAttune_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: BeautifulAttune_OnCompartmentLeave
+
+Locales\enUS.lua
+Locales\deDE.lua
+Core.lua
+Adapters\AttuneCompat.lua
+Adapters\Attune.lua
+Adapters\Env.lua
+Adapters\EUI.lua
+UI\Fonts.lua
+UI\Theme.lua
+UI\Kit.lua
+UI\KitForms.lua
+UI\MinimapButton.lua
+Skin\Skin.lua
+Skin\Window.lua
+Skin\Tree.lua
+Skin\Graph.lua
+Skin\Zoom.lua
+Skin\Detail.lua
+Skin\Results.lua
+Search\Index.lua
+Search\SearchUI.lua
+Settings\Settings.lua
+Settings\OptionsWindow.lua
+Integration\EUIPages.lua
