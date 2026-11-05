@@ -14,7 +14,7 @@ if not EUI() then return end
 local liveAccent -- accent as passed by the accent callback (it can arrive before GetAccentColor changes)
 local skinApi    -- facade from RegisterSkin, only when EllesmereUI's skin child is active
 
-local signals = { accent = 0, looks = 0, skinRan = false } -- read by /battune diag when something looks wrong
+local signals = { accent = 0, looks = 0, skinRan = false } -- read by the status command when something looks wrong
 ns.EUISignals = signals
 
 function Env.HasEUI()
@@ -81,7 +81,7 @@ ns.OnReady(function()
     end
     -- Documented skin API; it runs only with the Blizzard skin child. Used as a signal and for the panel colour.
     if type(E.RegisterSkin) == "function" then
-        pcall(E.RegisterSkin, "BeautifulAttune", function(S)
+        pcall(E.RegisterSkin, ns.name, function(S)
             signals.skinRan = true
             if type(S) ~= "table" then return end
             skinApi = S

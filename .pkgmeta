@@ -1,5 +1,8 @@
 package-as: BeautifulAttune
 
+move-folders:
+  BeautifulAttune/BeautifulAttune_Skin: BeautifulAttune_Skin
+
 ignore:
   - docs
   - .github

@@ -1,4 +1,4 @@
--- The BeautifulAttune options window: a plain themed frame, works with and without EllesmereUI and in combat. Sidebar with
+-- Our options window: a plain themed frame, works with and without EllesmereUI and in combat. Sidebar with
 -- the modules as headings and their pages below, the page on the right. Pages are built on first use and cached; their
 -- content comes from the row descriptions in Settings/Settings.lua.
 local addonName, ns = ...
@@ -10,8 +10,7 @@ local Options = {}
 ns.Options = Options
 
 local SIDE_W, GAP, NAV_H = 168, 12, 28
-local LOGO = "Interface\\AddOns\\BeautifulAttune\\Media\\Logo"
-local DEFAULT_PAGE = "appearance"
+local LOGO = "Interface\\AddOns\\" .. addonName .. "\\Media\\Icon"
 
 local win, ui
 
@@ -63,7 +62,7 @@ local function BuildSidebar(side)
     name:SetPoint("TOPLEFT", logo, "TOPRIGHT", 8, -1)
     name:SetPoint("RIGHT", -8, 0)
     name:SetWordWrap(false)
-    name:SetText(addonName)
+    name:SetText(ns.PACKAGE.title)
     local version = Kit.Text(side, 10, "textDim")
     version:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
     version:SetText("v" .. ns.Version())
@@ -71,17 +70,22 @@ local function BuildSidebar(side)
     line:SetPoint("TOPLEFT", 10, -50)
     line:SetPoint("TOPRIGHT", -10, -50)
 
+    -- the page list scrolls once the packs bring more pages than the window is high
+    local list = Kit.ScrollArea(side)
+    list:SetPoint("TOPLEFT", 0, -56)
+    list:SetPoint("BOTTOMRIGHT", 0, 4)
+    local nav = list.child
     ui.nav = {}
-    local y = -60
+    local y = -4
     for _, module in ipairs(Settings.Modules()) do
-        local heading = Kit.Text(side, 10, "accent")
+        local heading = Kit.Text(nav, 10, "accent")
         heading:SetPoint("TOPLEFT", 12, y - 4)
         heading:SetPoint("RIGHT", -8, 0)
         heading:SetWordWrap(false)
         heading:SetText(module.title)
         y = y - 20
         for _, page in ipairs(module.pages) do
-            local b = NavButton(side, page)
+            local b = NavButton(nav, page)
             b:SetPoint("TOPLEFT", 4, y)
             b:SetPoint("TOPRIGHT", -4, y)
             ui.nav[#ui.nav + 1] = b
@@ -89,6 +93,7 @@ local function BuildSidebar(side)
         end
         y = y - 8
     end
+    list:SetContentHeight(-y + 4)
 end
 
 ---------------------------------------------------------------------------
@@ -99,7 +104,7 @@ local function Create()
     local saved = Saved()
     ui = { pages = {} }
     win = Kit.Window({
-        name = "BeautifulAttuneOptions", title = addonName, w = saved.w or 740, h = saved.h or 560, minW = 600, minH = 420,
+        name = addonName .. "Options", title = ns.PACKAGE.title, w = saved.w or 740, h = saved.h or 560, minW = 600, minH = 420,
         maxW = 1600, maxH = 1200, resizable = true, geometry = saved, strata = "HIGH", headerHeight = 34,
         onShow = function()
             local entry = ui.current and ui.pages[ui.current]
@@ -145,7 +150,7 @@ end
 function Options.ShowPage(key)
     if not win then Create() end
     local page, module = Settings.FindPage(key)
-    if not page then page, module = Settings.FindPage(DEFAULT_PAGE) end
+    if not page then page, module = Settings.FindPage(Settings.FirstPage()) end
     key = page.key
     for k, entry in pairs(ui.pages) do
         if k ~= key then entry.frame:Hide() end
@@ -154,7 +159,7 @@ function Options.ShowPage(key)
     if not entry then
         local frame = CreateFrame("Frame", nil, ui.area)
         frame:SetAllPoints()
-        entry = { frame = frame, form = Settings.RenderKit(frame, Settings.Rows(page.form)) }
+        entry = { frame = frame, form = Settings.RenderKit(frame, Settings.Rows(page, "standalone")) }
         ui.pages[key] = entry
     end
     entry.frame:Show()
@@ -171,7 +176,7 @@ end
 function Options.Open(pageKey)
     if not win then Create() end
     win:Show()
-    return Options.ShowPage(pageKey or Saved().page or DEFAULT_PAGE)
+    return Options.ShowPage(pageKey or Saved().page or Settings.FirstPage())
 end
 
 function Options.Toggle()

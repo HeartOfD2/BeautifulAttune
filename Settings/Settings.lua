@@ -1,48 +1,34 @@
--- Page registry and settings pages, described once as data and drawn by renderers: Settings.RenderKit (our own options
--- window, Kit form blocks); an EllesmereUI renderer can read the same rows (Integration/EUIPages.lua).
--- Row types (all may carry tip, cond = function() -> bool, evaluated when the page is built, and only = "standalone" |
--- "eui" for rows that belong to one host):
+-- Options registry and the shared pages. Options are described once as data and drawn by two renderers:
+-- Settings.RenderKit (our own options window, Kit form rows) and Settings/EUIPages.lua (a section in the EllesmereUI
+-- options window). The host contributes the "General" module; every loaded pack adds its own modules through
+-- ns.RegisterPack(..., { modules = fn }).
+-- A module is { key, title, desc, pages = { { key, label, rows = function() -> rows } } }; page keys are unique over
+-- all modules (packs prefix theirs).
+-- Row types (all may carry tip; cond = function() -> bool, evaluated when the page is built; only = "standalone" | "eui"
+-- for rows that belong to one host; enabled = function() -> bool dims and locks the row while false):
 --   header { text }                               toggle { text, get, set }
 --   slider { text, min, max, step, get, set }     dropdown { text, values() -> labels, order, get, set }
 --   button { text, onClick }                      color { text, get() -> r, g, b, set(r, g, b) }
 --   palette { text, colors, get() -> r, g, b | nil, set(r, g, b) }    text { text or get() -> text }
 --   preview { text }  sample sentence in the chosen font
+--   themes { text, get, set }  every theme as a card (our own window only; EllesmereUI's keeps a dropdown)
+--   custom { height, build(parent) -> frame with :Update() }  a pack's own drawing (arrow preview ...)
 -- refresh = true: other rows may show a changed value afterwards (renderers re-read the page).
 local _, ns = ...
 local L = ns.L
 local Theme, Kit = ns.Theme, ns.Kit
+local P = ns.PACKAGE
 
 local Settings = {}
 ns.Settings = Settings
 
----------------------------------------------------------------------------
--- Registry: modules (sidebar headings) and their pages
----------------------------------------------------------------------------
-
--- form = row set below. Built at call time (the locale is final only after ADDON_LOADED).
-function Settings.Modules()
-    return {
-        { key = "Settings", title = L["Settings"], desc = L["Look, search, modules and information."], pages = {
-            { key = "appearance", label = L["Appearance"], form = "appearance" },
-            { key = "searchzoom", label = L["Search & zoom"], form = "searchzoom" },
-            { key = "modules", label = L["Modules"], form = "modules" },
-            { key = "info", label = L["Info"], form = "info" },
-        } },
-    }
+local function Reload()
+    if type(ReloadUI) == "function" then ReloadUI() end
 end
-
--- page, module of a page key (nil when unknown).
-function Settings.FindPage(key)
-    for _, module in ipairs(Settings.Modules()) do
-        for _, page in ipairs(module.pages) do
-            if page.key == key then return page, module end
-        end
-    end
-    return nil
-end
+Settings.Reload = Reload
 
 ---------------------------------------------------------------------------
--- Row sets
+-- Shared row sets (host module)
 ---------------------------------------------------------------------------
 
 local function ThemeValues()
@@ -64,73 +50,66 @@ local function PaletteGet()
     return Theme.CustomAccent()
 end
 
-local function Reload()
-    if type(ReloadUI) == "function" then ReloadUI() end
-end
-
-local function AppearanceRows()
-    local s = ns.db.settings
+-- Appearance rows; packs that need the same choices on their own pages can reuse them (Settings.AppearanceRows()).
+function Settings.AppearanceRows()
     return {
         { type = "header", text = L["APPEARANCE"] },
-        { type = "dropdown", text = L["Theme"], values = ThemeValues, get = Theme.Current,
-            set = function(key) Theme.Set(key) end,
-            tip = L["Look of the BeautifulAttune windows and of Attune's window."] },
+        -- our own window shows every theme as a card; EllesmereUI's window keeps its dropdown
+        { type = "themes", text = L["Theme"], get = Theme.Current, only = "standalone",
+            set = function(key) Theme.Set(key) end, refresh = true,
+            tip = L["Look of our own windows and of the skinned windows that follow a theme (Attune)."] },
+        { type = "dropdown", text = L["Theme"], values = ThemeValues, get = Theme.Current, only = "eui",
+            set = function(key) Theme.Set(key) end, refresh = true,
+            tip = L["Look of our own windows and of the skinned windows that follow a theme (Attune)."] },
         { type = "dropdown", text = L["Font"], values = function() return ns.Fonts.Values() end,
             get = function() return ns.Fonts.Current() end,
             set = function(key) Theme.SetFontChoice(key) end,
-            -- without EllesmereUI no word about it
             tip = ns.HasEUI()
-                and L["Font of all BeautifulAttune texts. \"EllesmereUI font\" follows the font set in EllesmereUI (only while it is installed and enabled)."]
-                or L["Font of all BeautifulAttune texts."] },
+                and L["Font of all our texts. \"EllesmereUI font\" follows the font set in EllesmereUI (only while it is installed and enabled)."]
+                or L["Font of all our texts."] },
         { type = "preview", text = L["The quick brown fox jumps over the lazy dog. 0123456789"] },
         { type = "dropdown", text = L["Accent color"], values = Theme.AccentModes, get = Theme.AccentMode,
             set = function(mode) Theme.SetAccentMode(mode) end, refresh = true,
-            tip = L["Highlight color of every theme: buttons, switches, selections and the search."] },
+            tip = L["Highlight color of every theme and of every skin: headings, lines, arrows, buttons and switches."] },
         { type = "palette", text = L["Own color"], colors = Theme.PALETTE, get = PaletteGet,
             set = function(r, g, b) Theme.SetCustomAccent(r, g, b) end, refresh = true,
             tip = L["Click a color to use it as the accent."] },
         { type = "color", text = L["Pick any color"], get = Theme.CustomAccent,
             set = function(r, g, b) Theme.SetCustomAccent(r, g, b) end, refresh = true,
             tip = L["Opens the color picker. The chosen color becomes the accent."] },
-        { type = "dropdown", text = L["Status colors"], values = Theme.StatusSchemes, get = Theme.StatusScheme,
-            set = function(key) Theme.SetStatusScheme(key) end,
-            tip = L["Colors of done, ready and locked steps. \"Attune classic\" keeps Attune's own tones."] },
+    }
+end
 
-        { type = "header", text = L["WINDOW"] },
-        { type = "slider", text = L["Window scale"], min = 70, max = 130, step = 5,
-            get = function() return math.floor(ns.Skin.WindowScale() * 100 + 0.5) end,
-            set = function(value) ns.Skin.SetWindowScale(value / 100) end,
-            tip = L["Scales Attune's whole window between 70 % and 130 %."] },
-        { type = "toggle", text = L["Hide the icon view"],
-            get = function() return s.hideIconView ~= false end,
+-- The theme editor (one custom row, UI/ThemeEditor.lua).
+function Settings.ThemeEditorRows()
+    return {
+        { type = "header", text = L["OWN THEMES"] },
+        { type = "text", text = L["Make your own theme from any theme, change every color and share it as a code. The theme you edit is in use, so every window shows the change at once."] },
+        Kit.ThemeEditorRow(),
+    }
+end
+
+local function PackRows()
+    local rows = {}
+    if #ns.Packs.order <= 1 then return rows end
+    rows[#rows + 1] = { type = "header", text = L["SKIN PACKS"] }
+    rows[#rows + 1] = { type = "text", text = L["Each pack skins one addon or a group of addons. A pack whose addon is not installed stays asleep. Changes take effect after a reload."] }
+    for _, entry in ipairs(ns.Packs.order) do
+        rows[#rows + 1] = { type = "toggle", text = L[entry.title] or entry.key,
+            tip = function() return ns.Packs.StatusText(entry) end,
+            get = function() return ns.Packs.SwitchedOn(entry.key) end,
             set = function(value)
-                s.hideIconView = value and true or false
-                ns.Skin.ApplyIconView()
-            end,
-            tip = L["Always shows Attune's list and hides its switch between list and icons."] },
+                ns.db.settings.packs[entry.key] = (not value) and false or nil
+                ns.Say(L["Takes effect after /reload."])
+            end }
+    end
+    rows[#rows + 1] = { type = "button", text = L["Reload now"], onClick = Reload }
+    return rows
+end
 
-        { type = "header", text = L["CHAIN"] },
-        { type = "dropdown", text = L["Line weight"],
-            values = function()
-                return { fine = L["Fine"], normal = L["Normal"], strong = L["Strong"] }, { "fine", "normal", "strong" }
-            end,
-            get = function() return s.lineWeight or "normal" end,
-            set = function(key)
-                s.lineWeight = key
-                ns.Skin.GraphApplySettings()
-            end,
-            tip = L["Thickness of the connectors between the steps (2, 3 or 4 pixels at 100 %)."] },
-        { type = "dropdown", text = L["Dungeon picture"],
-            values = function()
-                return { banner = L["Banner"], background = L["Background"], off = L["Off"] }, { "banner", "background", "off" }
-            end,
-            get = function() return s.dungeonArt or "banner" end,
-            set = function(key)
-                s.dungeonArt = key
-                ns.Skin.GraphApplySettings()
-            end,
-            tip = L["Banner above the chain, a faint background as in Attune, or no picture."] },
-
+local function GeneralRows()
+    local s = ns.db.settings
+    local rows = {
         { type = "header", text = L["LANGUAGE"] },
         { type = "dropdown", text = L["Language"], values = LanguageValues,
             get = function() return s.language or "auto" end,
@@ -140,104 +119,28 @@ local function AppearanceRows()
             end,
             tip = ns.HasEUI() and L["Automatic uses the EllesmereUI language when it is installed, else the language of the game."]
                 or L["Automatic uses the language of the game."] },
-        { type = "text", text = L["Language changes take effect after a reload."] },
-        { type = "button", text = L["Reload now"], onClick = Reload },
-    }
-end
-
-local function SearchZoomRows()
-    local s = ns.db.settings
-    local function Search() return s.search end
-    local function Apply() ns.Skin.SearchApplySettings() end
-    return {
-        { type = "header", text = L["SEARCH"] },
-        { type = "toggle", text = L["Mark matches in the chain"],
-            get = function() return Search().mark ~= false end,
+        { type = "header", text = L["INTEGRATION"] },
+        { type = "toggle", text = L["Integrate into EllesmereUI"], cond = ns.HasEUI,
+            get = function() return s.integrateEUI ~= false end,
             set = function(value)
-                Search().mark = value and true or false
-                Apply()
+                s.integrateEUI = value and true or false
+                ns.Say(L["The EllesmereUI integration changes after a reload (/reload)."])
             end,
-            tip = L["While you search, matching cards of the open chain get an accent frame and the others are dimmed."] },
-        { type = "toggle", text = L["Only open steps"],
-            get = function() return Search().onlyOpen and true or false end,
+            tip = L["Adds our section to the EllesmereUI options window; the slash command and the minimap button open it there. Off: our own window. Takes effect after a reload."] },
+        { type = "text", cond = function() return not ns.HasEUI() end,
+            text = L["Without EllesmereUI every option lives in this window. With EllesmereUI installed the same pages can also appear in its options window."] },
+        { type = "toggle", text = L["Show the minimap button"],
+            get = function() return not s.minimap.hide end,
             set = function(value)
-                Search().onlyOpen = value and true or false
-                Apply()
+                s.minimap.hide = not value
+                if ns.MinimapButton then ns.MinimapButton.Apply() end
             end,
-            tip = L["Hides what is already done from the results. Same as the switch in the result list."] },
-        { type = "dropdown", text = L["Filter"], values = function() return ns.Skin.SearchFilters() end,
-            get = function() return Search().filter or "all" end,
-            set = function(key)
-                Search().filter = key
-                Apply()
-            end,
-            tip = L["Which kind of entries the search shows. Same as the chips in the result list."] },
-        { type = "text", text = L["Click into the search field above the list, or type and use the arrow keys, Enter and Esc."] },
-
-        { type = "header", text = L["ZOOM"] },
-        { type = "toggle", text = L["Zoom above 100 %"],
-            get = function() return s.zoomAbove100 ~= false end,
-            set = function(value)
-                s.zoomAbove100 = value and true or false
-                ns.Skin.ZoomApplySettings()
-            end,
-            tip = L["Lets the zoom bar go up to 150 %. Attune itself stops at 100 %."] },
-        { type = "text", text = L["The zoom bar sits at the top right of the chain: minus, percent, plus and \"fit the whole chain\". Ctrl + mouse wheel over the chain zooms as well (10 % steps, 5 % below 50 %)."] },
+            tip = L["Left-click opens the options, right-click the quick actions. Drag it to move it along the minimap."] },
     }
-end
-
--- Module switches in the order of the window from top to bottom.
-local function ModuleList()
-    return {
-        { key = "window", text = L["Window"],
-            tip = L["Flat frame, header with the view switch, status bar and survey menu. The search needs it."] },
-        { key = "tree", text = L["List"], tip = L["Rows of Attune's list: sections, icons, levels and progress."] },
-        { key = "graph", text = L["Chain"], tip = L["Cards, connectors, the head card and the dungeon picture."] },
-        { key = "zoom", text = L["Zoom bar"],
-            tip = L["Zoom bar, fit button and Ctrl + mouse wheel; zoom from 10 % to 150 %."] },
-        { key = "search", text = L["Search"],
-            tip = L["Search field above the list with filters, result list and jump to the card."] },
-        { key = "detail", text = L["Quest details"], tip = L["Quest detail panel, map, rewards and the quest giver hint."] },
-        { key = "results", text = L["Results"], tip = L["The results table, its choices and the level slider."] },
-    }
-end
-
-local function ModuleRows()
-    local s = ns.db.settings
-    local rows = {
-        { type = "header", text = L["SKIN MODULES"] },
-        { type = "text", text = L["Each part of the skin can be switched off. Changes take effect after a reload; Attune itself keeps working either way."] },
-    }
-    for _, m in ipairs(ModuleList()) do
-        rows[#rows + 1] = { type = "toggle", text = m.text, tip = m.tip,
-            get = function() return s.modules[m.key] ~= false end,
-            set = function(value) s.modules[m.key] = value and true or false end }
-    end
-    rows[#rows + 1] = { type = "button", text = L["Reload now"], onClick = Reload }
-
-    rows[#rows + 1] = { type = "header", text = L["GENERAL"] }
-    rows[#rows + 1] = { type = "toggle", text = L["Show the minimap button"],
-        get = function() return not s.minimap.hide end,
-        set = function(value)
-            s.minimap.hide = not value
-            if ns.MinimapButton then ns.MinimapButton.Apply() end
-        end,
-        tip = L["Left-click opens or closes Attune, right-click the options. Drag it to move it along the minimap."] }
-    rows[#rows + 1] = { type = "toggle", text = L["Version notice"],
-        get = function() return s.versionNotice ~= false end,
-        set = function(value) s.versionNotice = value and true or false end,
-        tip = L["One chat line per session when the installed Attune version has not been tested with BeautifulAttune."] }
-    rows[#rows + 1] = { type = "toggle", text = L["Integrate into EllesmereUI"], cond = ns.HasEUI,
-        get = function() return s.integrateEUI ~= false end,
-        set = function(value)
-            s.integrateEUI = value and true or false
-            ns.Say(L["The EllesmereUI integration changes after a reload (/reload)."])
-        end,
-        tip = L["Adds the section \"Attune Skin\" to the EllesmereUI options window; the gear and /battune open it there. Takes effect after a reload."] }
-
+    for _, row in ipairs(PackRows()) do rows[#rows + 1] = row end
     rows[#rows + 1] = { type = "header", text = L["RESET"] }
-    rows[#rows + 1] = { type = "button", text = L["Reset all options"], onClick = function() ns.AskReset() end,
-        tip = L["Every BeautifulAttune option back to its default, then the interface reloads. Asks first."] }
+    rows[#rows + 1] = { type = "button", text = L["Reset look and language"], onClick = function() ns.AskReset() end,
+        tip = L["Theme, font, accent, language and window position back to the defaults, then the interface reloads. The options of the skins stay."] }
     return rows
 end
 
@@ -245,41 +148,130 @@ local function InfoRows()
     return {
         { type = "header", text = L["VERSIONS"] },
         { type = "text", get = function() return table.concat(ns.InfoLines(), "\n") end },
-        { type = "header", text = L["MODULES"] },
-        { type = "text", get = function() return table.concat(ns.ModuleLines(), "\n") end },
-        { type = "button", text = L["Print the diagnostics to the chat"], onClick = function() ns.Diag() end,
-            tip = L["Same as /battune diag."] },
+        { type = "header", text = L["SKIN PACKS"] },
+        { type = "text", get = function() return table.concat(ns.PackLines(), "\n") end },
+        { type = "button", text = L["Print the state to the chat"], onClick = function() ns.PrintStatus() end },
         { type = "header", text = L["COMMANDS"] },
         { type = "text", get = function() return table.concat(ns.CommandLines(), "\n") end },
         { type = "button", text = L["Open in EllesmereUI"], only = "standalone",
             cond = function() return ns.hosts.eui ~= nil end,
             onClick = function()
                 if ns.OpenOptions(nil, "eui") and ns.Options then ns.Options.Hide() end
-            end,
-            tip = L["The same pages in the EllesmereUI options window (/battune eui)."] },
+            end },
+        { type = "text", text = L["Unofficial skins. Not affiliated with the authors of the skinned addons or of EllesmereUI."] },
     }
 end
 
-local FORMS = { appearance = AppearanceRows, searchzoom = SearchZoomRows, modules = ModuleRows, info = InfoRows }
+---------------------------------------------------------------------------
+-- Registry
+---------------------------------------------------------------------------
 
--- Rows of a form page for a host ("eui" | "standalone"); rows whose cond fails or that belong to the other host are
--- left out.
-function Settings.Rows(form, host)
-    local make = FORMS[form]
-    if not make then return {} end
+local function HostModule()
+    return { key = "General", title = L["General"], desc = L["Look, language, packs and information."], pages = {
+        { key = "appearance", label = L["Appearance"], rows = Settings.AppearanceRows },
+        { key = "themeeditor", label = L["Theme editor"], rows = Settings.ThemeEditorRows },
+        { key = "general", label = L["General"], rows = GeneralRows },
+        { key = "info", label = L["Info"], rows = InfoRows },
+    } }
+end
+
+-- Every module in sidebar order: General first, then the loaded packs in package order. Built at call time (the
+-- locale is final only after ADDON_LOADED).
+function Settings.Modules()
+    local list = { HostModule() }
+    for _, entry in ipairs(ns.Packs.Loaded()) do
+        if entry.def.modules then
+            local ok, modules = pcall(entry.def.modules)
+            if ok and type(modules) == "table" then
+                for _, module in ipairs(modules) do list[#list + 1] = module end
+            elseif not ok then
+                geterrorhandler()(modules)
+            end
+        end
+    end
+    return list
+end
+
+-- page, module of a page key (nil when unknown).
+function Settings.FindPage(key)
+    for _, module in ipairs(Settings.Modules()) do
+        for _, page in ipairs(module.pages) do
+            if page.key == key then return page, module end
+        end
+    end
+    return nil
+end
+
+-- The first page of the first module (the page a fresh window opens on).
+function Settings.FirstPage()
+    local modules = Settings.Modules()
+    -- with exactly one pack (a single package) its own first page is the natural start
+    local start = modules[2] and #ns.Packs.order == 1 and modules[2] or modules[1]
+    return start.pages[1].key
+end
+
+local function Allowed(row, host)
+    if row.only and row.only ~= host then return false end
+    if row.cond and not row.cond() then return false end
+    return true
+end
+
+-- Rows of a page for a host ("eui" | "standalone"); rows whose cond fails or that belong to the other host are left out.
+function Settings.Rows(page, host)
     host = host or "standalone"
+    if not (page and page.rows) then return {} end
+    local ok, made = pcall(page.rows)
+    if not ok then
+        geterrorhandler()(made)
+        return {}
+    end
     local rows = {}
-    for _, row in ipairs(make()) do
-        if (not row.only or row.only == host) and (not row.cond or row.cond()) then rows[#rows + 1] = row end
+    for _, row in ipairs(made) do
+        if Allowed(row, host) then rows[#rows + 1] = row end
     end
     return rows
 end
 
+-- Tooltip text of a row (a string or a function).
+function Settings.Tip(row)
+    local tip = row.tip
+    if type(tip) == "function" then
+        local ok, text = pcall(tip)
+        tip = ok and text or nil
+    end
+    return tip
+end
+
 ---------------------------------------------------------------------------
--- Standalone renderer (Kit form blocks in a scroll area)
+-- Standalone renderer (Kit form rows in a scroll area)
 ---------------------------------------------------------------------------
 
 local PAD_X, GAP_Y = 6, 2
+
+local function CustomRow(parent, r)
+    local row = CreateFrame("Frame", nil, parent)
+    row.rowHeight = r.height or 60
+    row:SetHeight(row.rowHeight)
+    local ok, inner = pcall(r.build, row)
+    if not ok then geterrorhandler()(inner) end
+    row.inner = ok and inner or nil
+    function row:Update()
+        if self.inner and self.inner.Update then pcall(self.inner.Update, self.inner) end
+    end
+    return row
+end
+
+-- Dims and locks a row while its enabled() is false.
+local function Gate(row, enabled)
+    local on = enabled() and true or false
+    row:SetAlpha(on and 1 or 0.35)
+    if row.control then
+        if row.control.EnableMouse then row.control:EnableMouse(on) end
+        for _, child in ipairs({ row.control:GetChildren() }) do
+            if child.EnableMouse then child:EnableMouse(on) end
+        end
+    end
+end
 
 -- Builds rows into a scroll area filling parent; returns the area with :Refresh() (re-read every value).
 function Settings.RenderKit(parent, rows)
@@ -288,9 +280,10 @@ function Settings.RenderKit(parent, rows)
     area.rows = {}
     local child = area.child
 
-    local function Wrap(fn)
+    local function Wrap(fn, r)
         if not fn then return nil end
         return function(...)
+            if r.enabled and not r.enabled() then return end
             fn(...)
             area:Refresh()
         end
@@ -298,26 +291,43 @@ function Settings.RenderKit(parent, rows)
 
     for _, r in ipairs(rows) do
         local row
+        local tip = Settings.Tip(r)
         if r.type == "header" then
             row = Kit.SectionHeader(child, r.text)
         elseif r.type == "toggle" then
-            row = Kit.ToggleRow(child, r.text, r.get, Wrap(r.set), r.tip)
+            row = Kit.ToggleRow(child, r.text, r.get, Wrap(r.set, r), tip)
         elseif r.type == "slider" then
-            row = Kit.SliderRow(child, r.text, r.min, r.max, r.step, r.get, r.set, r.tip)
+            -- sliders call set while dragging: no page refresh per step
+            local set = r.set
+            row = Kit.SliderRow(child, r.text, r.min, r.max, r.step, r.get, function(...)
+                if r.enabled and not r.enabled() then return end
+                set(...)
+            end, tip)
         elseif r.type == "dropdown" then
-            row = Kit.DropdownRow(child, r.text, r.values, r.get, Wrap(r.set), r.tip)
+            row = Kit.DropdownRow(child, r.text, r.values, r.get, Wrap(r.set, r), tip)
         elseif r.type == "button" then
-            row = Kit.ButtonRow(child, r.text, r.onClick, r.tip)
+            row = Kit.ButtonRow(child, r.text, function()
+                if r.enabled and not r.enabled() then return end
+                r.onClick()
+                area:Refresh()
+            end, tip)
         elseif r.type == "color" then
-            row = Kit.ColorRow(child, r.text, r.get, Wrap(r.set), r.tip)
+            row = Kit.ColorRow(child, r.text, r.get, Wrap(r.set, r), tip)
         elseif r.type == "palette" then
-            row = Kit.PaletteRow(child, r.text, r.colors, r.get, Wrap(r.set), r.tip)
+            row = Kit.PaletteRow(child, r.text, r.colors, r.get, Wrap(r.set, r), tip)
         elseif r.type == "text" then
             row = Kit.TextRow(child, r.text, r.get)
         elseif r.type == "preview" then
             row = Kit.PreviewRow(child, r.text)
+        elseif r.type == "themes" then
+            row = Kit.ThemeGalleryRow(child, r.text, r.get, Wrap(r.set, r), tip)
+        elseif r.type == "custom" and r.build then
+            row = CustomRow(child, r)
         end
-        if row then area.rows[#area.rows + 1] = row end
+        if row then
+            row.def = r
+            area.rows[#area.rows + 1] = row
+        end
     end
 
     function area:Layout()
@@ -333,7 +343,10 @@ function Settings.RenderKit(parent, rows)
     end
 
     function area:Refresh()
-        for _, row in ipairs(self.rows) do row:Update() end
+        for _, row in ipairs(self.rows) do
+            row:Update()
+            if row.def and row.def.enabled then Gate(row, row.def.enabled) end
+        end
         self:Layout() -- dynamic texts change their height
     end
 
@@ -342,4 +355,9 @@ function Settings.RenderKit(parent, rows)
     area:Layout()
     area:Refresh()
     return area
+end
+
+-- Sidebar badge text of a module (pack version), nil for none.
+function Settings.Title()
+    return P.title
 end

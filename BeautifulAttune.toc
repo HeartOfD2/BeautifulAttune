@@ -4,14 +4,12 @@
 ## Notes: A modern, searchable look for the Attune addon. EllesmereUI is optional.
 ## Notes-deDE: Ein modernes, durchsuchbares Aussehen für das Addon Attune. EllesmereUI ist optional.
 ## Author: HeartOfD2
-## Version: 0.1.0
-## X-Website: https://github.com/HeartOfD2/BeautifulAttune
+## Version: 0.2.0
 ## X-Curse-Project-ID: 1754752
+## X-Website: https://github.com/HeartOfD2/BeautifulAttune
 ## Category: Quests
-## Category-deDE: Quests
 ## IconTexture: Interface\AddOns\BeautifulAttune\Media\Icon
-## Dependencies: Attune
-## OptionalDeps: EllesmereUI
+## OptionalDeps: EllesmereUI, EllesmereUIChat, EllesmereUIBlizzardSkin, EllesmereUIQuestTracker, Attune, BeautifulSkins
 ## SavedVariables: BeautifulAttuneDB
 ## AddonCompartmentFunc: BeautifulAttune_OnCompartmentClick
 ## AddonCompartmentFuncOnEnter: BeautifulAttune_OnCompartmentEnter
@@ -19,25 +17,17 @@
 
 Locales\enUS.lua
 Locales\deDE.lua
-Core.lua
-Adapters\AttuneCompat.lua
-Adapters\Attune.lua
-Adapters\Env.lua
-Adapters\EUI.lua
+Package.lua
+Core\Core.lua
+Core\Env.lua
+Core\EUI.lua
 UI\Fonts.lua
 UI\Theme.lua
 UI\Kit.lua
 UI\KitForms.lua
+UI\ThemeEditor.lua
 UI\MinimapButton.lua
-Skin\Skin.lua
-Skin\Window.lua
-Skin\Tree.lua
-Skin\Graph.lua
-Skin\Zoom.lua
-Skin\Detail.lua
-Skin\Results.lua
-Search\Index.lua
-Search\SearchUI.lua
 Settings\Settings.lua
 Settings\OptionsWindow.lua
-Integration\EUIPages.lua
+Settings\EUIPages.lua
+Settings\GamePanel.lua

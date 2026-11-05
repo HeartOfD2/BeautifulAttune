@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 (2026-11-05)
+
+- Built from the same source as BeautifulSkins: the Attune skin now lives in the folder `BeautifulAttune_Skin`, which
+  BeautifulAttune loads. Both folders belong together. Your settings are kept.
+- **Attune: Next**, Attune's second window with the next step of every attunement, has the same flat look.
+- Two new buttons in the window header, next to the settings button: one switches the "Attune: Next" window on and off
+  (its own close button switches it off for good, this brings it back), one opens Attune's own options.
+- Tested with Attune 16001-35.
+- **Thirteen themes** (instead of seven) with a theme gallery and a **theme editor** for your own themes, with live
+  contrast check and export / import. New installs without EllesmereUI start with the Midnight theme.
+- Options pages: General (appearance, language, minimap, EllesmereUI) and Attune (look, search and zoom, parts).
+- With BeautifulSkins installed as well, BeautifulAttune steps back (BeautifulSkins contains the same skin).
+- The minimap button opens the settings; Attune is in its right-click menu. `/battune minimap` became
+  `/beautifulattune minimap`.
+- Fix: dragging the list's scroll bar follows the mouse.
+
 ## 0.1.0 (beta)
 
 First public version, built for WoW: Forever (Interface 16001) and tested with Attune 16001-34.

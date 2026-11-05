@@ -1,13 +1,13 @@
--- Font choice for every BeautifulAttune text: the host's font (only while EllesmereUI is loaded), the game's fonts or one of
+-- Font choice for every text of our own windows: the host's font (only while EllesmereUI is loaded), the game's fonts or one of
 -- the bundled text fonts (Barlow, Fira Sans, Inter; SIL Open Font License, licenses next to the files). Stored as a key in
 -- settings.font; keys are saved, never rename one.
-local _, ns = ...
+local addonName, ns = ...
 local L = ns.L
 
 local Fonts = {}
 ns.Fonts = Fonts
 
-local DIR = "Interface\\AddOns\\BeautifulAttune\\Media\\Fonts\\"
+local DIR = "Interface\\AddOns\\" .. addonName .. "\\Media\\Fonts\\"
 
 -- Client locales whose letters the bundled Latin/Cyrillic fonts cannot show: there only the game font is offered.
 local CJK = { koKR = true, zhCN = true, zhTW = true }
@@ -48,7 +48,7 @@ function Fonts.Usable(file)
     if not file then return true end
     if usable[file] ~= nil then return usable[file] end
     local ok, result = pcall(function()
-        probe = probe or CreateFont("BeautifulAttuneFontProbe")
+        probe = probe or CreateFont(addonName .. "FontProbe")
         return probe:SetFont(file, 12, "")
     end)
     usable[file] = ok and result ~= false

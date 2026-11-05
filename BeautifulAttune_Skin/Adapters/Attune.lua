@@ -84,6 +84,8 @@ local aliases = {
     Tree = function() return A.Tree() end,
     Graph = function() return A.GraphScroll() end,
     Main = function() return A.MainWidget() end,
+    Next = function() return A.NextFrame() end,
+    Broker = function() return A.Broker() end,
 }
 
 -- State of one contract entry: "ok", "missing", "window" (waits for Attune's window), "view" (needs the list view
@@ -209,6 +211,8 @@ local HOOK_POINTS = {
     questRewards = { cap = "QuestRewards", name = "Attune_ShowQuestRewards" },
     resultList = { cap = "Results", name = "Attune_ShowResultList" },
     resultRows = { cap = "Results", name = "Attune_UpdateResultScroll" },
+    nextLayout = { cap = "NextWindow", name = "Attune_NextFrameLayout" },
+    nextUpdate = { cap = "NextWindow", name = "Attune_NextFrameUpdate" },
 }
 
 -- Capability behind a hook point (for a module's requires list).
@@ -723,6 +727,107 @@ function A.RunScript(frame, script, ...)
     if not IsFrame(frame) then return end
     local handler = frame:GetScript(script)
     if type(handler) == "function" then handler(frame, ...) end
+end
+
+---------------------------------------------------------------------------
+-- Attune's second window ("Attune: Next") and Attune's own options
+---------------------------------------------------------------------------
+
+-- The window lists the next step of every attunement. Its close button switches it off for good
+-- (Attune_DB.showNextSteps = false) and only Attune's own options bring it back, so the skin offers a way back.
+-- Attune builds the window the first time it is shown; before that there is nothing to skin.
+function A.NextFrame()
+    local f = _G.AttuneNextFrame
+    if type(f) == "table" and type(f.GetObjectType) == "function" and f.scroll then return f end
+end
+
+-- Its parts. scroll, content, empty, grip, minBtn and rows are fields of the frame. Attune keeps the rest in locals:
+-- its background, its title bar and its four gold edges are all textures of the frame and all of them give way to
+-- our own, so they are collected as one list rather than told apart. The two remaining buttons are the title and the
+-- close button; the close button is the only one of the two with a size of its own (16x16), the title is anchored.
+function A.NextParts()
+    local f = A.NextFrame()
+    if not f then return end
+    local parts = { frame = f, scroll = f.scroll, content = f.content, empty = f.empty, grip = f.grip,
+        minBtn = f.minBtn, rows = type(f.rows) == "table" and f.rows or {}, art = {} }
+    for _, region in ipairs({ f:GetRegions() }) do
+        if region:GetObjectType() == "Texture" then parts.art[#parts.art + 1] = region end
+    end
+    for _, child in ipairs({ f:GetChildren() }) do
+        if child ~= f.scroll and child ~= f.grip and child ~= f.minBtn and child:GetObjectType() == "Button" then
+            if math.abs((child:GetWidth() or 0) - 16) < 0.5 then parts.close = child else parts.title = child end
+        end
+    end
+    return parts
+end
+
+function A.HasNextWindow()
+    return A.Has("NextWindow") == true
+end
+
+function A.NextWindowShown()
+    local db = _G.Attune_DB
+    return type(db) == "table" and db.showNextSteps ~= false
+end
+
+-- Writes to Attune's saved variables, the second place where the skin does (the other is Attune_DB.zoom): the
+-- option is the only switch Attune offers for that window. Answers the state it left behind.
+function A.ToggleNextWindow()
+    local db = _G.Attune_DB
+    local update = _G.Attune_NextFrameUpdate
+    if type(db) ~= "table" or type(update) ~= "function" then return A.NextWindowShown() end
+    db.showNextSteps = not A.NextWindowShown()
+    pcall(update)
+    return A.NextWindowShown()
+end
+
+-- Attune's own name for that window, for our tooltip (AceLocale invents missing keys on read: look raw).
+function A.NextWindowName()
+    local lang = _G.AttuneLang
+    local text = type(lang) == "table" and rawget(lang, "NextSteps_TITLE") or nil
+    return type(text) == "string" and text ~= "" and text or nil
+end
+
+-- A library by name. LibStub is a table with a __call metamethod (not a function), so it is asked through its
+-- GetLibrary method; a missing library or LibStub answers nil.
+local function Library(name)
+    local libStub = _G.LibStub
+    if type(libStub) ~= "table" or type(libStub.GetLibrary) ~= "function" then return nil end
+    local ok, lib = pcall(libStub.GetLibrary, libStub, name, true)
+    if ok and type(lib) == "table" then return lib end
+end
+
+-- Attune's config dialog, the route that does not need Attune's broker.
+local function ConfigDialog()
+    local dialog = Library("AceConfigDialog-3.0")
+    if dialog and type(dialog.Open) == "function" then return dialog end
+end
+
+-- Attune's LibDataBroker data object. Attune keeps it in a file-local (`local Attune_Broker`), so there is no
+-- global of that name to read: the data object is looked up by its name in LibDataBroker, which Attune registers
+-- it with when it enables itself (later than login, hence looked at on every use).
+function A.Broker()
+    local ldb = Library("LibDataBroker-1.1")
+    if ldb and type(ldb.GetDataObjectByName) == "function" then
+        local ok, broker = pcall(ldb.GetDataObjectByName, ldb, "Attune_Broker")
+        if ok and type(broker) == "table" and type(broker.OnClick) == "function" then return broker end
+    end
+end
+
+-- Is there any way to open Attune's options? The broker is the complete one, the config dialog the fallback, and
+-- either is enough for the button to make sense.
+function A.CanOpenAttuneOptions()
+    return A.Broker() ~= nil or ConfigDialog() ~= nil
+end
+
+-- Attune's own options, opened the way Attune's minimap button does it on a right click. Attune keeps the settings
+-- category id in a local, so its own handler is the only complete route; the config dialog is the fallback.
+function A.OpenAttuneOptions()
+    local broker = A.Broker()
+    if broker and pcall(broker.OnClick, broker, "RightButton") then return true end
+    local dialog = ConfigDialog()
+    if dialog then return pcall(dialog.Open, dialog, "Attune") and true or false end
+    return false
 end
 
 -- Attune's own close logic (closes the survey menu, saves the list state), as its close button does.

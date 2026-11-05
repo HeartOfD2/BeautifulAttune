@@ -1,5 +1,6 @@
--- Minimap button (own code, no library): left-click opens or closes Attune's window, right-click opens the options
--- (the EllesmereUI section when it is active), drag moves it around the minimap edge. Position and visibility live in
+-- Minimap button (own code, no library): left-click opens the options (the EllesmereUI section when it is active),
+-- right-click a menu with the quick actions of the loaded packs (open Attune, lock the arrow ...), drag moves it around
+-- the minimap edge. Position and visibility live in
 -- settings.minimap = { hide, angle }.
 local addonName, ns = ...
 local L = ns.L
@@ -7,7 +8,7 @@ local L = ns.L
 local MinimapButton = {}
 ns.MinimapButton = MinimapButton
 
-local ICON = "Interface\\AddOns\\BeautifulAttune\\Media\\Icon" -- same as the TOC icon
+local ICON = "Interface\\AddOns\\" .. addonName .. "\\Media\\Icon" -- same as the TOC icon
 local button
 
 local function Saved()
@@ -47,15 +48,15 @@ end
 
 local function ShowTooltip(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:SetText(addonName, 1, 0.82, 0.45)
-    GameTooltip:AddLine(L["Left-click: open or close Attune"], 0.9, 0.9, 0.9)
-    GameTooltip:AddLine(L["Right-click: options"], 0.9, 0.9, 0.9)
+    GameTooltip:SetText(ns.PACKAGE.title, 1, 1, 1)
+    GameTooltip:AddLine(L["Left-click: options"], 0.9, 0.9, 0.9)
+    if #ns.Actions() > 0 then GameTooltip:AddLine(L["Right-click: quick actions"], 0.9, 0.9, 0.9) end
     GameTooltip:AddLine(L["Drag: move along the minimap"], 0.7, 0.7, 0.7)
     GameTooltip:Show()
 end
 
 local function Create()
-    button = CreateFrame("Button", "BeautifulAttuneMinimapButton", Minimap)
+    button = CreateFrame("Button", addonName .. "MinimapButton", Minimap)
     button:SetSize(31, 31)
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(Minimap:GetFrameLevel() + 8)
@@ -81,9 +82,9 @@ local function Create()
     button:SetScript("OnClick", function(_, mouse)
         GameTooltip:Hide()
         if mouse == "RightButton" then
-            ns.OpenOptions()
+            MinimapButton.Menu(button)
         else
-            ns.ToggleAttune()
+            ns.OpenOptions()
         end
     end)
     button:SetScript("OnDragStart", function(self)
@@ -100,6 +101,7 @@ end
 -- Show or hide after the setting changed.
 function MinimapButton.Apply()
     if not (Minimap and ns.db) then return end
+    if ns.dormant then return end -- a single package next to the suite: the suite's button is enough
     if Saved().hide then
         if button then button:Hide() end
         return
@@ -112,7 +114,19 @@ end
 function MinimapButton.Toggle()
     Saved().hide = not Saved().hide
     MinimapButton.Apply()
-    ns.Say(Saved().hide and L["Minimap button hidden. /battune minimap shows it again."] or L["Minimap button shown."])
+    ns.Say(Saved().hide and L["Minimap button hidden. %s minimap shows it again."]:format(ns.PACKAGE.slash[1])
+        or L["Minimap button shown."])
+end
+
+-- Menu with the quick actions of the loaded packs and the options; anchor = the clicked frame (nil: the cursor).
+function MinimapButton.Menu(anchor)
+    local items = {}
+    for _, action in ipairs(ns.Actions()) do
+        items[#items + 1] = { text = action.text, func = function() action.fn() end }
+    end
+    items[#items + 1] = { text = L["Options"], func = function() ns.OpenOptions() end }
+    anchor = anchor or button or AddonCompartmentFrame or Minimap
+    if anchor then ns.Kit.OpenMenu(anchor, items) end
 end
 
 -- The button frame (tests and the probe), nil while it was never shown.

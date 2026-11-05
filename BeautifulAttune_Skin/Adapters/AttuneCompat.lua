@@ -14,7 +14,7 @@ local _, ns = ...
 local Compat = {}
 ns.AttuneCompat = Compat
 
-Compat.testedVersions = { "16001-32", "16001-34" }
+Compat.testedVersions = { "16001-32", "16001-34", "16001-35" }
 
 Compat.contract = {
     -- data and saved variables
@@ -33,6 +33,19 @@ Compat.contract = {
     { cap = "StoredZoom", kind = "field", name = "Attune_DB.zoom", when = "load" },
     -- window life cycle and list
     { cap = "Slash", kind = "function", name = "Attune_SlashCommandHandler", when = "load" },
+    -- Attune's second window ("Attune: Next", a list with the next step of every attunement) and its own options
+    { cap = "NextWindow", kind = "function", name = "Attune_NextFrameUpdate", when = "load" },
+    { cap = "NextWindow", kind = "field", name = "Attune_DB.showNextSteps", when = "load", nilable = true },
+    { cap = "NextWindow", kind = "field", name = "AttuneLang.NextSteps_TITLE", when = "load" },
+    { cap = "NextWindow", kind = "function", name = "Attune_NextFrameLayout", when = "load" },
+    { cap = "NextWindow", kind = "global", name = "AttuneNextFrame", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.scroll", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.content", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.empty", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.grip", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.minBtn", when = "lazy" },
+    { cap = "NextWindow", kind = "field", name = "@Next.rows", when = "lazy" },
+    { cap = "AttuneOptions", kind = "field", name = "@Broker.OnClick", when = "lazy" },
     { cap = "Frame", kind = "function", name = "Attune_Frame", when = "load" },
     { cap = "ToggleView", kind = "function", name = "Attune_ToggleView", when = "load" },
     { cap = "Portrait", kind = "function", name = "Attune_UpdateWindowPortrait", when = "load" },

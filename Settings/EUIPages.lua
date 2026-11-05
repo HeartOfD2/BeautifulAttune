@@ -1,4 +1,4 @@
--- Optional EllesmereUI integration: one sidebar section "Attune Skin" with the same pages as our own options window
+-- Optional EllesmereUI integration: one sidebar section (PACKAGE.pluginLabel) with the same pages as our own options window
 -- (Settings/OptionsWindow.lua). Runs only when EllesmereUI is loaded and settings.integrateEUI is on; RegisterPlugin
 -- works only at load, so switching the setting takes effect after /reload. This is the only file that touches
 -- EllesmereUI.Widgets; the pages are drawn here from the row descriptions in Settings/Settings.lua.
@@ -6,7 +6,7 @@ local _, ns = ...
 local L = ns.L
 local Settings = ns.Settings
 
-local PLUGIN_ID = "BeautifulAttune"
+local PLUGIN_ID = ns.name
 
 local function IsPrebuild()
     local E = EllesmereUI
@@ -52,8 +52,9 @@ local function PaletteRow(parent, y, row)
         RefreshEUIPage()
     end, 20)
     palette:SetPoint("RIGHT", -20, 0)
-    if row.tip then ns.Kit.Tooltip(host, { row.text, row.tip }, "ANCHOR_TOPLEFT") end
-    host:EnableMouse(row.tip ~= nil)
+    local tip = Settings.Tip(row)
+    if tip then ns.Kit.Tooltip(host, { row.text, tip }, "ANCHOR_TOPLEFT") end
+    host:EnableMouse(tip ~= nil)
     return 40
 end
 
@@ -90,41 +91,81 @@ local function TextRow(parent, y, row)
     return math.max(h, math.floor((text:GetStringHeight() or 0) + 14))
 end
 
+-- A pack's own drawing (custom row) on a Kit frame inside the page.
+local function CustomRow(parent, y, row)
+    local height = row.height or 60
+    if IsPrebuild() then return height end
+    local host = Host(parent, y, height)
+    local ok, inner = pcall(row.build, host)
+    if not ok then geterrorhandler()(inner) end
+    if ok and inner and inner.Update then
+        pcall(inner.Update, inner)
+        liveTexts[#liveTexts + 1] = { update = inner }
+    end
+    return height
+end
+
+local gated = {} -- { frame, enabled } rows that only work in one mode
+
+-- Dims and locks rows whose enabled() is false (EUI's widgets have no disabled state of their own).
+local function UpdateGated()
+    for _, g in ipairs(gated) do
+        local on = g.enabled() and true or false
+        g.frame:SetAlpha(on and 1 or 0.3)
+        for _, child in ipairs({ g.frame:GetChildren() }) do
+            if child.EnableMouse then child:EnableMouse(on) end
+        end
+    end
+end
+
 local function Render(parent, yOffset, rows)
     local W = EllesmereUI.Widgets
     if type(W) ~= "table" then return 1 end
     local y = yOffset
     for _, row in ipairs(rows) do
         local set = row.set
-        if set and row.refresh then
+        if set then
             set = function(...)
+                if row.enabled and not row.enabled() then return end
                 row.set(...)
-                RefreshEUIPage()
+                if row.refresh then RefreshEUIPage() end
+                UpdateGated()
             end
         end
-        local _, h
+        local tip = Settings.Tip(row)
+        local frame, h
         if row.type == "header" then
-            _, h = W:SectionHeader(parent, row.text, y, row.tip)
+            frame, h = W:SectionHeader(parent, row.text, y, tip)
         elseif row.type == "toggle" then
-            _, h = W:Toggle(parent, row.text, y, function() return row.get() and true or false end, set, row.tip)
+            frame, h = W:Toggle(parent, row.text, y, function() return row.get() and true or false end, set, tip)
         elseif row.type == "slider" then
-            _, h = W:Slider(parent, row.text, y, row.min, row.max, row.step, row.get, set, row.tip)
+            frame, h = W:Slider(parent, row.text, y, row.min, row.max, row.step, row.get, set, tip)
         elseif row.type == "dropdown" then
             local values, order = row.values()
-            _, h = W:Dropdown(parent, row.text, y, values, row.get, set, order, row.tip)
+            frame, h = W:Dropdown(parent, row.text, y, values, row.get, set, order, tip)
         elseif row.type == "button" then
-            _, h = W:Button(parent, row.text, y, row.onClick)
+            frame, h = W:Button(parent, row.text, y, function()
+                if row.enabled and not row.enabled() then return end
+                row.onClick()
+                RefreshEUIPage()
+            end)
         elseif row.type == "color" then
-            _, h = W:ColorPicker(parent, row.text, y, row.get, set, false)
+            frame, h = W:ColorPicker(parent, row.text, y, row.get, set, false)
         elseif row.type == "palette" then
             h = PaletteRow(parent, y, row)
         elseif row.type == "text" then
             h = TextRow(parent, y, row)
         elseif row.type == "preview" then
             h = PreviewRow(parent, y, row)
+        elseif row.type == "custom" and row.build then
+            h = CustomRow(parent, y, row)
+        end
+        if row.enabled and type(frame) == "table" and frame.SetAlpha and not IsPrebuild() then
+            gated[#gated + 1] = { frame = frame, enabled = row.enabled }
         end
         y = y - (h or 0)
     end
+    UpdateGated()
     return math.abs(y)
 end
 
@@ -133,8 +174,8 @@ end
 ---------------------------------------------------------------------------
 
 local function Open(pageKey)
-    local page, module = Settings.FindPage(pageKey or "appearance")
-    if not page then page, module = Settings.FindPage("appearance") end
+    local page, module = Settings.FindPage(pageKey or Settings.FirstPage())
+    if not page then page, module = Settings.FindPage(Settings.FirstPage()) end
     local E = EllesmereUI
     if not (type(E) == "table" and type(E.OpenPlugin) == "function") then
         ns.Say(L["EllesmereUI is missing or too old (no plugin API)."])
@@ -165,17 +206,25 @@ local function Module(module)
         pages = names,
         buildPage = function(pageName, parent, y)
             local page = byName[pageName]
-            if page then return Render(parent, y, Settings.Rows(page.form, "eui")) end
+            if page then return Render(parent, y, Settings.Rows(page, "eui")) end
             return 1
         end,
         onPageCacheRestore = function()
             ns.Theme.CheckLive() -- accent or font may have changed while the page was hidden
-            for _, live in ipairs(liveTexts) do live.fs:SetText(live.get()) end -- module states, versions
+            for _, live in ipairs(liveTexts) do -- module states, versions, custom drawings
+                if live.fs then live.fs:SetText(live.get()) end
+                if live.update then pcall(live.update.Update, live.update) end
+            end
+            UpdateGated()
         end,
     }
 end
 
 local function Register()
+    if ns.dormant then
+        ns.registerResult = "dormant (runs in " .. tostring(ns.PACKAGE.yieldTo) .. ")"
+        return
+    end
     local E = EllesmereUI
     if type(E) ~= "table" then
         ns.registerResult = "no EllesmereUI"
@@ -192,7 +241,7 @@ local function Register()
     local modules = {}
     for i, module in ipairs(Settings.Modules()) do modules[i] = Module(module) end
     -- The section label must not start with "EUI"/"Ellesmere" (EUI rejects the whole registration).
-    local ok, result = pcall(E.RegisterPlugin, PLUGIN_ID, { label = L["Attune Skin"], modules = modules })
+    local ok, result = pcall(E.RegisterPlugin, PLUGIN_ID, { label = ns.PACKAGE.pluginLabel or ns.PACKAGE.title, modules = modules })
     ns.registerResult = ok and result or ("error: " .. tostring(result))
     if ok and result ~= false then
         ns.hosts.eui = {

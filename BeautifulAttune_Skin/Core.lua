@@ -1,23 +1,19 @@
--- BeautifulAttune core: namespace, locale choice, event dispatch, SavedVariables, combat queue, module registry with
--- error guard, slash command, diagnostics, compartment. Attune is reached only through ns.Attune (Adapters/Attune.lua).
+-- Attune pack core (formerly the addon BeautifulAttune): SavedVariables, module registry with error guard,
+-- diagnostics and the /battune command. Look, language, options window and minimap button belong to the host
+-- (ns.host). Attune is reached only through ns.Attune (Adapters/Attune.lua).
 local addonName, ns = ...
+local host = ns.host
+host.PackLocale(ns) -- the host chose the language before it loads packs
 local L = ns.L
 
-ns.name = addonName
-BeautifulAttune = ns -- the only addon global besides SavedVariables, slash and compartment callbacks
-
-local PREFIX = "|cff6fbfff[BeautifulAttune]|r "
+local DB_NAME = "BeautifulAttune_SkinDB"
 local DB_VERSION = 1
 local MAX_ERRORS = 3
 
 local defaults = {
     version = DB_VERSION,
     settings = {
-        language = "auto",      -- "auto" | "enUS" | "deDE", applied at load
         versionNotice = true,   -- one chat line per session when the Attune version is untested
-        integrateEUI = true,    -- options section in the EllesmereUI options window, applied at load
-        minimap = { hide = false, angle = 200 }, -- own minimap button: shown, position on the minimap edge (degrees)
-        statusScheme = "modern", -- "modern" | "classic" (Attune's own tones)
         windowScale = 1,        -- scale of Attune's window, 0.7 - 1.3
         hideIconView = true,    -- hide Attune's icon grid and its switch, always show the list
         lineWeight = "normal",  -- chain connectors: "fine" | "normal" | "strong" (2 / 3 / 4 px at 100 %)
@@ -29,53 +25,35 @@ local defaults = {
             onlyOpen = false,   -- hide what is done
             mark = true,        -- mark matching cards of the open chain and dim the others while a search is active
         },
-        options = {},           -- options window geometry and last page
         -- skin modules, each can be switched off (takes effect after /reload)
-        modules = { window = true, tree = true, graph = true, zoom = true, search = true, detail = true, results = true },
+        modules = { window = true, tree = true, graph = true, zoom = true, search = true, detail = true,
+            results = true, nextWindow = true },
     },
 }
+-- Options of the former addon that belong to this pack (its look options went to the host).
+local OWN = { "versionNotice", "windowScale", "hideIconView", "lineWeight", "dungeonArt", "zoomAbove100", "zoom",
+    "search", "modules" }
 
 local frame = CreateFrame("Frame")
 local events = {}
-local pending = {}
 local readyCallbacks = {}
 
--- Secret values may not be compared, branched on or printed. Guard before use.
-function ns.IsSecret(value)
-    return type(issecretvalue) == "function" and issecretvalue(value) and true or false
-end
-
-function ns.SafeString(value, fallback)
-    if value == nil or ns.IsSecret(value) then return fallback end
-    return tostring(value)
-end
-
-function ns.Say(text)
-    DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. text, 0.95, 0.92, 0.86)
-end
-
 function ns.Version()
-    local getter = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
-    local version = type(getter) == "function" and getter(addonName, "Version") or nil
-    return type(version) == "string" and version or "?"
+    return host.Version(addonName)
 end
 
--- Run an action now, or after combat ends when it touches protected frames.
-function ns.Queue(action)
-    if InCombatLockdown() then
-        pending[#pending + 1] = action
-    else
-        action()
-    end
-end
-
--- Later files register work that needs the database and the final locale (runs at the end of ADDON_LOADED).
+-- Later files register work that needs the database (runs at the end of this pack's ADDON_LOADED).
 function ns.OnReady(callback)
     if ns.db then
         callback()
     else
         readyCallbacks[#readyCallbacks + 1] = callback
     end
+end
+
+-- Our pages in the host's options (its own window or the EllesmereUI section).
+function ns.OpenOptions(pageKey, hostKey)
+    return host.OpenOptions(pageKey or "attune.look", hostKey)
 end
 
 ---------------------------------------------------------------------------
@@ -233,10 +211,9 @@ function Modules.CheckAll()
 end
 
 ---------------------------------------------------------------------------
--- Saved variables and locale
+-- Saved variables
 ---------------------------------------------------------------------------
 
--- Fill missing keys of the saved table from the defaults, recursing into sub-tables.
 local function MergeDefaults(db, source)
     for key, value in pairs(source) do
         if type(value) == "table" then
@@ -248,48 +225,40 @@ local function MergeDefaults(db, source)
     end
 end
 
-local function Migrate(db)
-    -- Version 1 is the first layout; later versions upgrade here, one step at a time.
-    db.version = DB_VERSION
-end
-
--- Language: the setting, else a preferred locale offered by an integration (ns.PreferredLocale, optional), else the
--- client, else English.
-local function ChooseLocale(choice)
-    local locale
-    if choice == "enUS" or choice == "deDE" then
-        locale = choice
-        ns.localeSource = "setting"
-    else
-        local preferred = type(ns.PreferredLocale) == "function" and ns.PreferredLocale() or nil
-        if type(preferred) == "string" and preferred ~= "" then
-            locale = preferred
-            ns.localeSource = "integration"
-        else
-            locale = GetLocale()
-            ns.localeSource = "client"
-        end
+-- First start: the options of the former addon BeautifulAttune (its settings table) that belong to this pack.
+local function Import(db)
+    local old = host.ImportedSettings("Attune")
+    local s = type(old) == "table" and old.settings
+    if type(s) ~= "table" then return end
+    db.settings = {}
+    for _, key in ipairs(OWN) do
+        if s[key] ~= nil then db.settings[key] = s[key] end
     end
-    if type(locale) ~= "string" or locale == "" or locale == "enGB" then locale = "enUS" end
-    ns.locale = locale
-    ns.activeLocale = ns.locales[locale] or ns.locales.enUS
+    db.importedFrom = "BeautifulAttune"
 end
 
----------------------------------------------------------------------------
--- Events
----------------------------------------------------------------------------
-
--- SavedVariables exist only from ADDON_LOADED on; never touch them at file scope.
-function events:ADDON_LOADED(loaded)
-    if loaded ~= addonName then return end
-    self:UnregisterEvent("ADDON_LOADED")
-    if type(BeautifulAttuneDB) ~= "table" then BeautifulAttuneDB = {} end
-    MergeDefaults(BeautifulAttuneDB, defaults)
-    Migrate(BeautifulAttuneDB)
-    ns.db = BeautifulAttuneDB
-    ChooseLocale(BeautifulAttuneDB.settings.language)
+-- This pack loads on demand from inside the host's ADDON_LOADED, so our own ADDON_LOADED is queued rather than
+-- delivered during that call, and the client may hand us PLAYER_LOGIN first (BeautifulSkins_RestedXP hit exactly that
+-- on the first start of the Forever release). The setup runs from whichever event arrives first, once.
+local function Ready()
+    if ns.db then return end
+    frame:UnregisterEvent("ADDON_LOADED")
+    local db = _G[DB_NAME]
+    if type(db) ~= "table" then
+        db = {}
+        Import(db)
+    end
+    MergeDefaults(db, defaults)
+    db.version = DB_VERSION
+    _G[DB_NAME] = db
+    ns.db = db
     for i = 1, #readyCallbacks do readyCallbacks[i]() end
     wipe(readyCallbacks)
+end
+
+function events:ADDON_LOADED(loaded)
+    if loaded ~= addonName then return end
+    Ready()
 end
 
 local function VersionNotice()
@@ -300,15 +269,11 @@ end
 
 -- Attune enables itself on PLAYER_LOGIN too; checking one frame later sees its finished setup.
 function events:PLAYER_LOGIN()
+    Ready()
     C_Timer.After(0, function()
         Modules.CheckAll()
         VersionNotice()
     end)
-end
-
-function events:PLAYER_REGEN_ENABLED()
-    for i = 1, #pending do pending[i]() end
-    wipe(pending)
 end
 
 frame:SetScript("OnEvent", function(self, event, ...)
@@ -317,7 +282,6 @@ frame:SetScript("OnEvent", function(self, event, ...)
 end)
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 ---------------------------------------------------------------------------
 -- Diagnostics (/battune diag)
@@ -368,8 +332,7 @@ function ns.InfoLines()
     local A = ns.Attune
     local lines = { ("%s %s"):format(addonName, ns.Version()) }
     lines[#lines + 1] = L["Attune %s · tested with: %s"]:format(A.Version() or "?", Joined(A.TestedVersions()))
-    if ns.Env.HasEUI() then lines[#lines + 1] = L["EllesmereUI found: accent, font and language are followed."] end
-    return lines
+        return lines
 end
 
 function ns.Diag()
@@ -410,68 +373,10 @@ function ns.Diag()
 end
 
 ---------------------------------------------------------------------------
--- Slash command and compartment
+-- Reset, slash command and registration with the host
 ---------------------------------------------------------------------------
 
----------------------------------------------------------------------------
--- Options router: the same pages live in two hosts. "standalone" is our own options window (always there, works in
--- combat); "eui" is the section in the EllesmereUI options window (only when EllesmereUI is loaded and the integration
--- is on). A host registers ns.hosts[key] = { Open(pageKey) -> opened, IsShown(), Hide() }.
----------------------------------------------------------------------------
-
-ns.hosts = {}
-
-function ns.PreferredHost()
-    return ns.hosts.eui and "eui" or "standalone"
-end
-
--- Opens the options on pageKey (nil = the last page) in hostKey (nil = preferred; in combat our own window, since
--- EllesmereUI's may not open then). Returns true when a window opened.
-function ns.OpenOptions(pageKey, hostKey)
-    local explicit = hostKey ~= nil
-    hostKey = hostKey or ns.PreferredHost()
-    if hostKey == "eui" then
-        if not ns.hosts.eui then
-            if not ns.HasEUI() then
-                ns.Say(L["EllesmereUI is not loaded. /battune options opens the BeautifulAttune window."])
-            elseif ns.db and ns.db.settings.integrateEUI then
-                ns.Say(L["The EllesmereUI section is not active (%s). Try /reload."]:format(tostring(ns.registerResult)))
-            else
-                ns.Say(L["The EllesmereUI integration is off. Turn it on under Modules, then /reload."])
-            end
-            return false
-        end
-        if InCombatLockdown() then
-            if explicit then
-                ns.Say(L["The EllesmereUI window cannot be opened in combat. /battune options works."])
-                return false
-            end
-            hostKey = "standalone"
-        end
-    end
-    local host = ns.hosts[hostKey]
-    if not host then return false end
-    return host.Open(pageKey) and true or false
-end
-
--- Slash command without arguments: open the options; our own window closes again when it is already open.
-function ns.ToggleOptions()
-    local host = ns.hosts.standalone
-    if ns.PreferredHost() == "standalone" and host and host.IsShown() then
-        host.Hide()
-        return true
-    end
-    return ns.OpenOptions()
-end
-
----------------------------------------------------------------------------
--- Reset (asks first: a dialog, or the same command a second time when the dialog is missing)
----------------------------------------------------------------------------
-
-local RESET_WINDOW = 10 -- seconds in which the second request confirms
-local resetAskedAt
-
--- All settings back to the defaults, then a reload (every module and the language start fresh).
+-- The Attune skin options back to the defaults, then a reload (every module starts fresh).
 function ns.ResetSettings()
     wipe(ns.db.settings)
     MergeDefaults(ns.db, defaults)
@@ -479,25 +384,8 @@ function ns.ResetSettings()
 end
 
 function ns.AskReset()
-    if type(StaticPopup_Show) == "function" and type(StaticPopupDialogs) == "table" then
-        StaticPopupDialogs.BEAUTIFULATTUNE_RESET = {
-            text = L["Reset all BeautifulAttune options to their defaults? The interface reloads."],
-            button1 = type(YES) == "string" and YES or L["Yes"],
-            button2 = type(NO) == "string" and NO or L["No"],
-            OnAccept = function() ns.ResetSettings() end,
-            timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
-        }
-        StaticPopup_Show("BEAUTIFULATTUNE_RESET")
-        return
-    end
-    local now = GetTime()
-    if resetAskedAt and now - resetAskedAt <= RESET_WINDOW then
-        resetAskedAt = nil
-        ns.ResetSettings()
-        return
-    end
-    resetAskedAt = now
-    ns.Say(L["Repeat within 10 seconds to reset all options (the interface reloads)."])
+    host.Confirm("attuneReset", L["Reset all options of the Attune skin to their defaults? The interface reloads."],
+        function() ns.ResetSettings() end)
 end
 
 function ns.ToggleAttune()
@@ -506,45 +394,36 @@ function ns.ToggleAttune()
     end
 end
 
+-- One line per command (chat help and the Info page).
+function ns.CommandLines()
+    return {
+        L["/battune - options of the Attune skin"],
+        L["/battune attune - open or close the Attune window"],
+        L["/battune diag - versions, Attune parts and modules"],
+        L["/battune reset - reset the options of the Attune skin"],
+    }
+end
+
 local function Help()
     ns.Say(L["Commands:"])
     for _, line in ipairs(ns.CommandLines()) do ns.Say(line) end
 end
 
--- One line per command (chat help and the Info page).
-function ns.CommandLines()
-    local lines = {
-        L["/battune - options"],
-        L["/battune options - the BeautifulAttune options window"],
-    }
-    if ns.HasEUI() then lines[#lines + 1] = L["/battune eui - the options in EllesmereUI"] end
-    lines[#lines + 1] = L["/battune attune - open or close the Attune window"]
-    lines[#lines + 1] = L["/battune minimap - show or hide the minimap button"]
-    lines[#lines + 1] = L["/battune diag - versions, Attune parts and modules"]
-    lines[#lines + 1] = L["/battune reset - reset the options"]
-    return lines
-end
-
 SLASH_BEAUTIFULATTUNE1 = "/battune"
-SLASH_BEAUTIFULATTUNE2 = "/beautifulattune"
 SlashCmdList["BEAUTIFULATTUNE"] = function(msg)
     local cmd, rest = (msg or ""):match("^(%S*)%s*(.-)%s*$")
     cmd = cmd:lower()
-    if cmd == "" then
-        ns.ToggleOptions()
-    elseif cmd == "options" then
-        ns.OpenOptions(nil, "standalone")
+    if cmd == "" or cmd == "options" then
+        ns.OpenOptions()
     elseif cmd == "eui" then
         ns.OpenOptions(nil, "eui")
     elseif cmd == "attune" then
         ns.ToggleAttune()
-    elseif cmd == "minimap" and ns.MinimapButton then
-        ns.MinimapButton.Toggle()
     elseif cmd == "diag" then
         ns.Diag()
     elseif cmd == "reset" then
         ns.AskReset()
-    elseif ns.devCommands and ns.devCommands[cmd] then -- registered by files of the development checkout only
+    elseif rawget(ns, "devCommands") and ns.devCommands[cmd] then
         ns.devCommands[cmd](rest:lower())
     elseif cmd == "help" then
         Help()
@@ -554,24 +433,26 @@ SlashCmdList["BEAUTIFULATTUNE"] = function(msg)
     end
 end
 
--- Addon compartment callbacks must be real globals (named in the TOC).
--- Left-click toggles Attune's window, right-click opens the options (the EllesmereUI section when it is active).
-function BeautifulAttune_OnCompartmentClick(_, mouseButton)
-    if mouseButton == "RightButton" then
-        ns.OpenOptions()
-    else
-        ns.ToggleAttune()
+local function CountActive()
+    local active, total = 0, 0
+    for _, def in ipairs(Modules.order) do
+        total = total + 1
+        if def.status == "active" then active = active + 1 end
     end
+    return active, total
 end
 
-function BeautifulAttune_OnCompartmentEnter(_, owner)
-    GameTooltip:SetOwner(owner, "ANCHOR_LEFT")
-    GameTooltip:SetText(addonName, 1, 0.82, 0.45)
-    GameTooltip:AddLine(L["Left-click: open or close Attune"], 0.9, 0.9, 0.9)
-    GameTooltip:AddLine(L["Right-click: options"], 0.9, 0.9, 0.9)
-    GameTooltip:Show()
-end
-
-function BeautifulAttune_OnCompartmentLeave()
-    GameTooltip:Hide()
-end
+host.RegisterPack(ns, {
+    key = "Attune",
+    title = "Attune",
+    modules = function() return ns.OptionModules() end,
+    status = function()
+        local active, total = CountActive()
+        return L["%d of %d parts active"]:format(active, total)
+    end,
+    info = function() return ns.InfoLines() end,
+    commands = function() return ns.CommandLines() end,
+    actions = function()
+        return { { text = L["Open or close Attune"], fn = function() ns.ToggleAttune() end } }
+    end,
+})

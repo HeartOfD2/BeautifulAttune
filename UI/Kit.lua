@@ -1,6 +1,6 @@
--- UI kit: small themed building blocks for BeautifulAttune's own frames (windows, buttons, inputs, scroll areas, menu).
+-- UI kit: small themed building blocks for our own frames (windows, buttons, inputs, scroll areas, menu).
 -- Every widget paints itself through Theme.Bind, so theme, accent and font changes reach open windows live.
--- Frames are plain (never secure), so they work in combat. Named frames (needed for ESC) all start with "BeautifulAttune".
+-- Frames are plain (never secure), so they work in combat. Named frames (needed for ESC) all start with the addon name.
 local _, ns = ...
 local L = ns.L
 local Theme = ns.Theme
@@ -16,6 +16,12 @@ local WHEEL_STEP = 30
 -- Text, dividers, hints, tooltips
 ---------------------------------------------------------------------------
 
+-- Colour of a text token; the accent as text uses its readable variant (a class or own accent may be too pale).
+function Kit.TextToken(T, key)
+    if key == "accent" then return T.accentText or T.accent end
+    return T[key] or T.text
+end
+
 -- Font string in the addon font (EUI's when loaded). colorKey = token name; false leaves the color to the owner (buttons, tabs).
 function Kit.Text(parent, size, colorKey, layer)
     local fs = parent:CreateFontString(nil, layer or "OVERLAY")
@@ -25,7 +31,7 @@ function Kit.Text(parent, size, colorKey, layer)
     Bind(fs, function(self, T)
         -- fnFont: a fixed font file for this string (font previews), else the addon font
         if not (self.fnFont and self:SetFont(self.fnFont, self.fnSize, "") ~= false) then Theme.SetFont(self, self.fnSize) end
-        if self.fnColor then Paint(self, T[self.fnColor] or T.text) end
+        if self.fnColor then Paint(self, Kit.TextToken(T, self.fnColor)) end
     end)
     return fs
 end
@@ -117,6 +123,9 @@ local function Circle(cx, cy, r, steps)
 end
 
 -- Segments in a unit square, origin bottom left.
+local LOCK_BODY = { { 0.25, 0.12, 0.75, 0.12 }, { 0.75, 0.12, 0.75, 0.52 }, { 0.75, 0.52, 0.25, 0.52 },
+    { 0.25, 0.52, 0.25, 0.12 } }
+
 local GLYPHS = {
     close = { { 0.22, 0.22, 0.78, 0.78 }, { 0.22, 0.78, 0.78, 0.22 } },
     plus = { { 0.5, 0.18, 0.5, 0.82 }, { 0.18, 0.5, 0.82, 0.5 } },
@@ -134,7 +143,20 @@ local GLYPHS = {
     fit = { { 0.12, 0.88, 0.36, 0.88 }, { 0.12, 0.88, 0.12, 0.64 }, { 0.88, 0.88, 0.64, 0.88 }, { 0.88, 0.88, 0.88, 0.64 },
         { 0.12, 0.12, 0.36, 0.12 }, { 0.12, 0.12, 0.12, 0.36 }, { 0.88, 0.12, 0.64, 0.12 }, { 0.88, 0.12, 0.88, 0.36 },
         { 0.36, 0.38, 0.64, 0.38 }, { 0.64, 0.38, 0.64, 0.62 }, { 0.64, 0.62, 0.36, 0.62 }, { 0.36, 0.62, 0.36, 0.38 } },
+    lock = { { 0.35, 0.52, 0.35, 0.72 }, { 0.35, 0.72, 0.42, 0.82 }, { 0.42, 0.82, 0.58, 0.82 },
+        { 0.58, 0.82, 0.65, 0.72 }, { 0.65, 0.72, 0.65, 0.52 } },
+    unlock = { { 0.35, 0.52, 0.35, 0.8 }, { 0.35, 0.8, 0.42, 0.9 }, { 0.42, 0.9, 0.58, 0.9 },
+        { 0.58, 0.9, 0.65, 0.8 }, { 0.65, 0.8, 0.65, 0.7 } },
+    ignore = Circle(0.5, 0.5, 0.36, 16),
+    checkbox = { { 0.2, 0.2, 0.8, 0.2 }, { 0.8, 0.2, 0.8, 0.8 }, { 0.8, 0.8, 0.2, 0.8 }, { 0.2, 0.8, 0.2, 0.2 },
+        { 0.32, 0.5, 0.46, 0.35 }, { 0.46, 0.35, 0.7, 0.65 } },
+    bullets = { { 0.12, 0.74, 0.26, 0.74 }, { 0.38, 0.74, 0.88, 0.74 }, { 0.12, 0.5, 0.26, 0.5 },
+        { 0.38, 0.5, 0.88, 0.5 }, { 0.12, 0.26, 0.26, 0.26 }, { 0.38, 0.26, 0.88, 0.26 } },
 }
+for _, kind in ipairs({ "lock", "unlock" }) do
+    for _, seg in ipairs(LOCK_BODY) do table.insert(GLYPHS[kind], seg) end
+end
+table.insert(GLYPHS.ignore, { 0.25, 0.75, 0.75, 0.25 })
 table.insert(GLYPHS.search, { 0.6, 0.4, 0.82, 0.18 })
 for i = 0, 7 do -- gear teeth
     local a = i / 8 * 2 * math.pi
@@ -635,6 +657,212 @@ function Kit.ScrollArea(parent)
     return f
 end
 
+local function PaintRow(row, T)
+    Paint(row.sel, T.select)
+    Paint(row.mark, T.accent)
+end
+
+-- Virtual list with pooled rows. opts:
+--   create(row)                   add font strings etc. once per pooled row
+--   update(row, item, index)      fill a row
+--   onClick(row, item, button)    left/right click
+--   isSelected(item)              selection marker (accent bar + tint)
+function Kit.ScrollList(parent, rowHeight, opts)
+    local f = CreateFrame("Frame", nil, parent)
+    f.rowHeight, f.items, f.offset, f.rows, f.visible = rowHeight, {}, 0, {}, 0
+    f.bar = ScrollBar(f, function(value) f:SetOffset(math.floor(value + 0.5)) end)
+
+    local function NewRow(index)
+        local row = CreateFrame("Button", nil, f)
+        row:SetHeight(rowHeight)
+        row:SetPoint("TOPLEFT", 0, -(index - 1) * rowHeight)
+        row:SetPoint("RIGHT", -10, 0)
+        row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        row.sel = row:CreateTexture(nil, "BACKGROUND")
+        row.sel:SetAllPoints()
+        row.mark = row:CreateTexture(nil, "ARTWORK")
+        row.mark:SetPoint("TOPLEFT")
+        row.mark:SetPoint("BOTTOMLEFT")
+        row.mark:SetWidth(2)
+        Hover(row)
+        if opts.isSelected then Bind(row, PaintRow) else row.mark:Hide() end
+        row:SetScript("OnClick", function(self, button)
+            if opts.onClick and self.item ~= nil then opts.onClick(self, self.item, button) end
+        end)
+        if opts.create then opts.create(row) end
+        return row
+    end
+
+    function f:Refresh()
+        local count = #self.items
+        local maxOffset = math.max(0, count - self.visible)
+        if self.offset > maxOffset then self.offset = maxOffset end
+        for i = 1, self.visible do
+            local row, index = self.rows[i], self.offset + i
+            local item = self.items[index]
+            row.item, row.index = item, index
+            if item ~= nil then
+                local selected = opts.isSelected and opts.isSelected(item) and true or false
+                row.sel:SetShown(selected)
+                if opts.isSelected then row.mark:SetShown(selected) end
+                if opts.update then opts.update(row, item, index) end
+                row:Show()
+            else
+                row:Hide()
+            end
+        end
+        for i = self.visible + 1, #self.rows do self.rows[i]:Hide() end
+        self.bar:Update(self.offset, maxOffset, self.visible / math.max(1, count))
+    end
+
+    function f:Layout()
+        self.visible = math.max(0, math.floor(self:GetHeight() / rowHeight))
+        for i = #self.rows + 1, self.visible do self.rows[i] = NewRow(i) end
+        self:Refresh()
+    end
+
+    function f:SetItems(items)
+        self.items = items or {}
+        self:Refresh()
+    end
+
+    function f:SetOffset(value)
+        self.offset = math.max(0, math.min(math.max(0, #self.items - self.visible), value or 0))
+        self:Refresh()
+    end
+
+    -- Scroll just enough to show item index.
+    function f:ScrollTo(index)
+        if index <= self.offset then
+            self:SetOffset(index - 1)
+        elseif index > self.offset + self.visible then
+            self:SetOffset(index - self.visible)
+        end
+    end
+
+    f:EnableMouseWheel(true)
+    f:SetScript("OnMouseWheel", function(self, delta) self:SetOffset(self.offset - delta * 3) end)
+    f:SetScript("OnSizeChanged", function(self) self:Layout() end)
+    return f
+end
+
+---------------------------------------------------------------------------
+-- Tabs
+---------------------------------------------------------------------------
+
+-- Tab strip with an accent underline. items = { { key, label }, ... }; onSelect(key).
+function Kit.Tabs(parent, items, onSelect, h)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetHeight(h or 24)
+    f.buttons, f.order = {}, {}
+    f.baseline = Kit.Divider(f)
+    f.baseline:SetPoint("BOTTOMLEFT")
+    f.baseline:SetPoint("BOTTOMRIGHT")
+    for i, item in ipairs(items) do
+        local key = item[1]
+        local b = CreateFrame("Button", nil, f)
+        b.key = key
+        b.text = Kit.Text(b, 12, false)
+        b.text:SetPoint("LEFT", 4, 1)
+        b.text:SetPoint("RIGHT", -4, 1)
+        b.text:SetJustifyH("CENTER")
+        b.text:SetWordWrap(false)
+        b.text:SetText(item[2])
+        b.line = b:CreateTexture(nil, "ARTWORK")
+        b.line:SetPoint("BOTTOMLEFT", 6, 0)
+        b.line:SetPoint("BOTTOMRIGHT", -6, 0)
+        b.line:SetHeight(2)
+        b:SetScript("OnEnter", function(self) self.hovered = true; Refresh(self) end)
+        b:SetScript("OnLeave", function(self) self.hovered = false; Refresh(self) end)
+        b:SetScript("OnClick", function(self) f:Select(self.key) end)
+        Bind(b, function(self, T)
+            local active = f.selected == self.key
+            Paint(self.text, (active or self.hovered) and T.text or T.textDim)
+            Paint(self.line, T.accent)
+            self.line:SetShown(active)
+        end)
+        f.buttons[key] = b
+        f.order[i] = b
+    end
+    local function Layout(self)
+        local w = self:GetWidth() / math.max(1, #self.order)
+        for i, b in ipairs(self.order) do
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", (i - 1) * w, 0)
+            b:SetSize(w, self:GetHeight())
+        end
+    end
+    f:SetScript("OnSizeChanged", Layout)
+    function f:Select(key, silent)
+        if not self.buttons[key] then return end
+        self.selected = key
+        for _, b in ipairs(self.order) do Refresh(b) end
+        if onSelect and not silent then onSelect(key) end
+    end
+    function f:SetLabel(key, text)
+        if self.buttons[key] then self.buttons[key].text:SetText(text) end
+    end
+    return f
+end
+
+---------------------------------------------------------------------------
+-- Glow strip (popup: player has notes / is ignored)
+---------------------------------------------------------------------------
+
+-- Pulsing gradient along one edge of owner. opts: side "BOTTOM"|"TOP", height, colorKey ("accent" | "danger").
+function Kit.Glow(owner, opts)
+    opts = opts or {}
+    local side = opts.side == "TOP" and "TOP" or "BOTTOM"
+    local g = CreateFrame("Frame", nil, owner)
+    g:SetHeight(opts.height or 12)
+    g:SetPoint(side .. "LEFT")
+    g:SetPoint(side .. "RIGHT")
+    g:SetFrameLevel(owner:GetFrameLevel() + 5)
+    g.colorKey = opts.colorKey or "accent"
+    g.fade = g:CreateTexture(nil, "OVERLAY")
+    g.fade:SetAllPoints()
+    g.edge = g:CreateTexture(nil, "OVERLAY", nil, 1)
+    g.edge:SetPoint(side .. "LEFT")
+    g.edge:SetPoint(side .. "RIGHT")
+    g.edge:SetHeight(2)
+    Bind(g, function(self, T)
+        local c = T[self.colorKey] or T.accent
+        Paint(self.edge, c)
+        self.fade:SetColorTexture(1, 1, 1, 1)
+        -- VERTICAL gradients run bottom (first color) to top; strongest at the glowing edge.
+        local ok = type(CreateColor) == "function" and pcall(function()
+            local near, far = CreateColor(c[1], c[2], c[3], 0.5), CreateColor(c[1], c[2], c[3], 0)
+            if side == "BOTTOM" then
+                self.fade:SetGradient("VERTICAL", near, far)
+            else
+                self.fade:SetGradient("VERTICAL", far, near)
+            end
+        end)
+        if not ok then self.fade:SetColorTexture(c[1], c[2], c[3], 0.25) end
+    end)
+    g.anim = g:CreateAnimationGroup()
+    g.anim:SetLooping("BOUNCE")
+    local pulse = g.anim:CreateAnimation("Alpha")
+    pulse:SetFromAlpha(1)
+    pulse:SetToAlpha(0.25)
+    pulse:SetDuration(1.1)
+    pulse:SetSmoothing("IN_OUT")
+    function g:SetColorKey(key)
+        self.colorKey = key
+        Refresh(self)
+    end
+    function g:Play()
+        self:Show()
+        if not self.anim:IsPlaying() then self.anim:Play() end
+    end
+    function g:Stop()
+        self.anim:Stop()
+        self:Hide()
+    end
+    g:Hide()
+    return g
+end
+
 ---------------------------------------------------------------------------
 -- Context menu (one shared frame)
 ---------------------------------------------------------------------------
@@ -704,7 +932,7 @@ local function EnsureMenu()
     blocker:RegisterForClicks("AnyUp")
     blocker:SetScript("OnClick", function() Kit.CloseMenu() end)
     blocker:Hide()
-    menu = CreateFrame("Frame", "BeautifulAttuneMenu", UIParent, "BackdropTemplate")
+    menu = CreateFrame("Frame", ns.name .. "Menu", UIParent, "BackdropTemplate")
     menu:SetFrameStrata("FULLSCREEN_DIALOG")
     menu:SetFrameLevel(blocker:GetFrameLevel() + 10)
     menu:SetClampedToScreen(true)
@@ -712,7 +940,7 @@ local function EnsureMenu()
     menu.rows = {}
     menu:SetScript("OnHide", function() blocker:Hide() end)
     menu:Hide()
-    table.insert(UISpecialFrames, "BeautifulAttuneMenu")
+    table.insert(UISpecialFrames, ns.name .. "Menu")
     Bind(menu, function(self, T) Box(self, T, "popup", "border", "popup") end)
 end
 

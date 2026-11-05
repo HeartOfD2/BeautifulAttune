@@ -9,17 +9,24 @@ status, surveys and data stay exactly as they are. BeautifulAttune only changes 
 > Unofficial. Not affiliated with or endorsed by the authors of Attune or EllesmereUI. **Attune is required** and installed
 > separately. EllesmereUI is optional. No code, graphics or texts from Attune or EllesmereUI are included.
 
+> **Also bundled in BeautifulSkins.** This Attune skin is part of **[BeautifulSkins](https://www.curseforge.com/wow/addons/beautifulskins)**,
+> which brings the same look to RestedXP Guides, GearQuest Forever, SkillUp Forever, Whisper Messenger and Waypoint UI as
+> well. If you use more than just Attune, install BeautifulSkins instead: it contains everything in this addon, and with
+> both installed BeautifulAttune steps back. BeautifulAttune stays here for everyone who only wants the Attune skin.
+
 ![overview](docs/screenshots/01-overview.png)
 
 ![search](docs/screenshots/02-search.png)
 
 ![themes](docs/screenshots/03-themes.png)
 
-![appearance](docs/screenshots/04-appearance.png)
+![options attune](docs/screenshots/04-options-attune.png)
 
-![search and zoom](docs/screenshots/05-search-and-zoom.png)
+![next window](docs/screenshots/05-next-window.png)
 
-![modules](docs/screenshots/06-modules.png)
+![search and zoom](docs/screenshots/06-search-and-zoom.png)
+
+![parts](docs/screenshots/07-parts.png)
 
 ## Features
 
@@ -37,7 +44,10 @@ status, surveys and data stay exactly as they are. BeautifulAttune only changes 
   case and accents (German umlauts too), finds quest, NPC and item IDs and the usual short names. Use the arrow keys and
   Enter; the chain opens with the step centred and highlighted, and matching cards of the open chain are marked.
 - **Quest details and results** – the quest detail panel with map and rewards, and the results table, in the same style.
-- **Looks** – seven themes (Standard, Classic, Parchment, Midnight, Frost, Light and, with EllesmereUI, EllesmereUI),
+- **Attune: Next** – Attune's second window (the next step of every attunement) in the same flat look. Two buttons in
+  the header switch it on and off and open Attune's own options.
+- **Looks** – thirteen themes (Standard, Graphite, Midnight, Frost, Nord, Emerald, Ember, High contrast, Light, Rosé,
+  Parchment, Classic and, with EllesmereUI, EllesmereUI) with a gallery and a theme editor for your own themes,
   accent colour of the theme, of your class or of your choice, and bundled fonts (Inter, Fira Sans, Barlow) or the game
   font. With **EllesmereUI** the accent colour, font and language follow EllesmereUI, and the settings also appear in its
   options window ("Attune Skin").
@@ -49,22 +59,26 @@ status, surveys and data stay exactly as they are. BeautifulAttune only changes 
 
 | Command | Effect |
 |---|---|
-| `/battune` | settings (in EllesmereUI when it is installed) |
-| `/battune options` | the BeautifulAttune settings window |
+| `/battune` | settings of the Attune skin (in EllesmereUI when it is installed and the integration is on) |
 | `/battune eui` | the settings in EllesmereUI |
 | `/battune attune` | open or close the Attune window |
-| `/battune minimap` | show or hide the minimap button |
 | `/battune diag` | versions, Attune parts and modules (for bug reports) |
-| `/battune reset` | reset all settings (asks first) |
+| `/battune reset` | reset the Attune skin settings (asks first) |
+| `/beautifulattune status` | state of the skin, versions and commands |
+| `/beautifulattune minimap` | show or hide the minimap button |
+| `/beautifulattune reset` | reset look, language and every skin setting (asks first) |
 
-The minimap button and the entry in the addon compartment open Attune with a left-click and the settings with a
-right-click.
+The minimap button and the entry in the addon compartment open the settings with a left-click; a right-click shows
+quick actions such as opening Attune.
+
+BeautifulAttune is the Attune part of **BeautifulSkins** (skins for Attune, RestedXP, GearQuest and more). With
+BeautifulSkins installed you do not need BeautifulAttune; with both installed, BeautifulAttune steps back.
 
 ## Install
 
-Install it through CurseForge, or copy the `BeautifulAttune` folder into the `Interface\AddOns` folder of your
-WoW: Forever installation (for the beta: `World of Warcraft\_classic_beta_\Interface\AddOns`). Attune must be installed
-as well.
+Install it through CurseForge, or copy both folders `BeautifulAttune` and `BeautifulAttune_Skin` into the
+`Interface\AddOns` folder of your WoW: Forever installation (`World of Warcraft\_forever_\Interface\AddOns`).
+Attune must be installed as well. Your settings of earlier versions are kept.
 
 ## Bug reports
 

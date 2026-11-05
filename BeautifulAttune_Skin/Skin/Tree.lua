@@ -239,20 +239,88 @@ local function StyleButton(tree, button, d)
     end
 end
 
+-- Dragging the scroll bar makes Attune refresh its list on every frame, so this runs in the hot path: everything
+-- here is skipped once it already holds. The alpha and the mouse state are still looked at every time rather than
+-- set once, because a widget that comes back from the pool brings its own back with it.
+local function Fade(tree, region)
+    if type(region) ~= "table" or type(region.GetAlpha) ~= "function" then return end
+    if (region:GetAlpha() or 1) == 0 then return end
+    Skin.Alpha(tree, region, 0)
+end
+
+local function Mute(tree, frame)
+    if type(frame) ~= "table" or type(frame.GetAlpha) ~= "function" then return end
+    local mouse = type(frame.IsMouseEnabled) == "function" and frame:IsMouseEnabled() or false
+    if (frame:GetAlpha() or 1) == 0 and not mouse then return end
+    Skin.Conceal(tree, frame)
+end
+
+-- true when the part has to be anchored to `to` again (and then it is ready for the SetPoint calls).
+local function Rebind(part, to)
+    if part.boundTo == to then return false end
+    part:ClearAllPoints()
+    part.boundTo = to
+    return true
+end
+
+-- Puts our thumb where the slider's value says Attune's thumb is: the thumb travels the bar's height minus its own.
+local function PlaceThumb(s)
+    local bar, source = s.bar, s.source
+    if not (bar and source) then return end
+    local height, size = bar:GetHeight(), source:GetHeight()
+    if type(height) ~= "number" then height = 0 end
+    if type(size) ~= "number" or size <= 0 then size = 24 end
+    local min, max = bar:GetMinMaxValues()
+    local value = bar:GetValue()
+    if type(min) ~= "number" or type(max) ~= "number" or type(value) ~= "number" then min, max, value = 0, 0, 0 end
+    local range = max - min
+    local fraction = range > 0 and (value - min) / range or 0
+    if fraction < 0 then fraction = 0 elseif fraction > 1 then fraction = 1 end
+    local offset = -math.floor(fraction * math.max(0, height - size) + 0.5)
+    if s.thumbBar ~= bar or s.thumbOffset ~= offset or s.thumbSize ~= size then
+        s.thumbBar, s.thumbOffset, s.thumbSize = bar, offset, size
+        s.thumb:ClearAllPoints()
+        s.thumb:SetHeight(size)
+        s.thumb:SetPoint("TOP", bar, "TOP", 0, offset)
+    end
+end
+
 local function StyleScrollbar(tree, bar, s)
     if type(bar) ~= "table" then return end
     local thumb = type(bar.GetThumbTexture) == "function" and bar:GetThumbTexture() or nil
     if not thumb then return end -- no thumb to mirror: leave Attune's own bar alone
-    for _, region in ipairs({ bar:GetRegions() }) do Skin.Alpha(tree, region, 0) end
-    Skin.Alpha(tree, thumb, 0)
-    for _, child in ipairs({ bar:GetChildren() }) do Skin.Conceal(tree, child) end
-    s.track:ClearAllPoints()
-    s.track:SetPoint("TOP", bar, "TOP", 0, 0)
-    s.track:SetPoint("BOTTOM", bar, "BOTTOM", 0, 0)
-    s.track:SetFrameLevel(bar:GetFrameLevel() + 1)
-    s.thumb:ClearAllPoints()
-    s.thumb:SetPoint("CENTER", thumb, "CENTER", 0, 0)
-    s.thumb:SetFrameLevel(bar:GetFrameLevel() + 2)
+    -- Attune shortens the list frame's height while it refreshes (its "large" rows are taller than the 18 px the tree
+    -- counts with) and does that again for every refresh nested in another one. While the bar is dragged the engine
+    -- hands over fractional values, the tree rounds them and sets the bar again, which fires a nested refresh: that
+    -- one measures with a twice shortened frame and leaves a different range (0..31 instead of 0..23), so the thumb
+    -- jumped between two places on every mouse move. With whole steps while dragging there is no nested refresh.
+    if type(bar.SetObeyStepOnDrag) == "function" then
+        Skin.Remember(tree, "scroll-whole-steps", function()
+            local was = type(bar.GetObeyStepOnDrag) == "function" and bar:GetObeyStepOnDrag() or false
+            bar:SetObeyStepOnDrag(true)
+            return function() bar:SetObeyStepOnDrag(was and true or false) end
+        end)
+    end
+    for _, region in ipairs({ bar:GetRegions() }) do Fade(tree, region) end
+    Fade(tree, thumb)
+    for _, child in ipairs({ bar:GetChildren() }) do Mute(tree, child) end
+    if Rebind(s.track, bar) then
+        s.track:SetPoint("TOP", bar, "TOP", 0, 0)
+        s.track:SetPoint("BOTTOM", bar, "BOTTOM", 0, 0)
+    end
+    -- Not anchored to Attune's thumb texture: while the bar is dragged, the engine moves that texture on its own
+    -- and a frame anchored to it follows late (ours hung behind the mouse). The place is worked out from the
+    -- slider's value instead and set whenever the value, the range or the size changes.
+    s.bar, s.source = bar, thumb
+    if Skin.Once(bar, "tree-thumb-hooks") then
+        for _, script in ipairs({ "OnValueChanged", "OnMinMaxChanged", "OnSizeChanged", "OnShow" }) do
+            A.HookScript(bar, script, function() PlaceThumb(s) end, "tree")
+        end
+    end
+    PlaceThumb(s)
+    local level = bar:GetFrameLevel()
+    if s.track:GetFrameLevel() ~= level + 1 then s.track:SetFrameLevel(level + 1) end
+    if s.thumb:GetFrameLevel() ~= level + 2 then s.thumb:SetFrameLevel(level + 2) end
     local shown = bar:IsShown() and true or false
     s.track:SetShown(shown)
     s.thumb:SetShown(shown)
@@ -285,6 +353,8 @@ local function HideAll()
     for button in pairs(ofButton) do ofButton[button] = nil end
     if shared then
         shared.track:Hide(); shared.thumb:Hide(); shared.divider:Hide()
+        shared.track.boundTo, shared.thumb.boundTo = nil, nil -- anchored again on the next skin (see Rebind)
+        shared.thumbBar = nil -- and the thumb placed again (see PlaceThumb)
         shared.divider.hot = false
         shared.divider:SetWidth(1)
     end

@@ -1,246 +1,185 @@
--- German translations. Keys are the English source texts.
+-- German texts of the host. Keys are the English source texts (Locales\enUS.lua). Packs keep their own tables and
+-- fall back to this one for shared words.
 local _, ns = ...
+
 ns.locales.deDE = {
-    -- core and slash command
-    ["Attune %s has not been tested with this version. If something looks wrong: /battune diag"] =
-        "Attune %s wurde mit dieser Version nicht getestet. Falls etwas falsch aussieht: /battune diag",
-    ["Attune is not loaded or too old. /battune diag shows details."] =
-        "Attune ist nicht geladen oder zu alt. /battune diag zeigt Einzelheiten.",
-    ["Commands:"] = "Befehle:",
-    ["/battune - options"] = "/battune – Optionen",
-    ["/battune attune - open or close the Attune window"] = "/battune attune – Attune-Fenster öffnen oder schließen",
-    ["/battune diag - versions, Attune parts and modules"] = "/battune diag – Versionen, Attune-Teile und Module",
-    ["/battune reset - reset the options"] = "/battune reset – Optionen zurücksetzen",
-    ["Unknown command."] = "Unbekannter Befehl.",
-    ["Left-click: open or close Attune"] = "Linksklick: Attune öffnen oder schließen",
-    ["Right-click: options"] = "Rechtsklick: Optionen",
-    -- diagnostics
-    ["%s %s · Attune %s · tested with: %s %s"] = "%s %s · Attune %s · getestet mit: %s %s",
-    ["ok"] = "ok",
-    ["not created yet"] = "noch nicht erzeugt",
-    ["needs the list view"] = "braucht die Listenansicht",
-    ["waiting for the Attune window"] = "wartet auf das Attune-Fenster",
-    ["missing"] = "fehlt",
-    ["Modules:"] = "Module:",
-    ["not checked yet"] = "noch nicht geprüft",
-    ["off (setting)"] = "aus (Einstellung)",
-    ["off (Attune part missing)"] = "aus (Attune-Teil fehlt)",
-    ["on"] = "an",
-    ["off (errors)"] = "aus (Fehler)",
-    ["errors: %d, first: %s"] = "Fehler: %d, erster: %s",
-    ["Unknown status colours: none"] = "Unbekannte Statusfarben: keine",
-    ["Unknown status colours:"] = "Unbekannte Statusfarben:",
-    -- UI kit
-    ["Close"] = "Schließen",
-    ["Sure?"] = "Sicher?",
-    ["The color picker is not available in this client."] = "Die Farbauswahl ist in diesem Client nicht verfügbar.",
-    -- themes
-    ["Standard"] = "Standard",
-    ["Classic"] = "Klassisch",
-    ["Parchment"] = "Pergament",
-    ["Midnight"] = "Mitternacht",
-    ["Frost"] = "Frost",
-    ["Light"] = "Hell",
-    ["Theme default"] = "Theme-Standard",
-    ["EllesmereUI accent"] = "EllesmereUI-Akzent",
-    ["Class color"] = "Klassenfarbe",
-    ["Own color"] = "Eigene Farbe",
-    ["Modern"] = "Modern",
-    ["Attune classic"] = "Attune klassisch",
-    ["EllesmereUI font"] = "EllesmereUI-Schrift",
-    ["Game font"] = "Spielschrift",
-    -- options window
-    ["Settings"] = "Einstellungen",
-    ["Appearance"] = "Aussehen",
-    ["Info"] = "Info",
-    ["APPEARANCE"] = "AUSSEHEN",
-    ["LANGUAGE"] = "SPRACHE",
-    ["VERSIONS"] = "VERSIONEN",
-    ["MODULES"] = "MODULE",
-    ["Theme"] = "Theme",
-    ["Look of the BeautifulAttune windows and of Attune's window."] =
-        "Aussehen der BeautifulAttune-Fenster und des Attune-Fensters.",
-    ["Font"] = "Schrift",
-    ["Font of all BeautifulAttune texts. \"EllesmereUI font\" follows the font set in EllesmereUI (only while it is installed and enabled)."] =
-        "Schrift aller BeautifulAttune-Texte. „EllesmereUI-Schrift“ folgt der in EllesmereUI eingestellten Schrift (nur wenn es installiert und aktiv ist).",
-    ["The quick brown fox jumps over the lazy dog. 0123456789"] =
-        "Zwölf Boxkämpfer jagen Viktor quer über den großen Sylter Deich. 0123456789",
+    ["%s - options"] = "%s – Optionen",
+    ["%s eui - the options in EllesmereUI"] = "%s eui – die Optionen in EllesmereUI",
+    ["%s help lists all commands."] = "%s help zeigt alle Befehle.",
+    ["%s minimap - show or hide the minimap button"] = "%s minimap – Minikartenknopf zeigen oder verbergen",
+    ["%s options - our own options window"] = "%s options – unser eigenes Optionsfenster",
+    ["%s reset - reset look and language"] = "%s reset – Aussehen und Sprache zurücksetzen",
+    ["%s status - state of every skin"] = "%s status – Zustand aller Skins",
+    ["%s: the former addon %s is still active. Switch it off in the addon list and /reload; its settings are taken over."] =
+        "%s: Das frühere Addon %s ist noch aktiv. Schalte es in der Addon-Liste aus und lade mit /reload neu; seine Einstellungen werden übernommen.",
+    ["Accent"] = "Akzent",
+    ["Accent as text"] = "Akzent als Text",
     ["Accent color"] = "Akzentfarbe",
-    ["Highlight color of every theme: buttons, switches, selections and the search."] =
-        "Hervorhebungsfarbe aller Themes: Schaltflächen, Schalter, Auswahl und Suche.",
-    ["Pick any color"] = "Beliebige Farbe wählen",
-    ["Click a color to use it as the accent."] = "Klicke eine Farbe an, um sie als Akzent zu nutzen.",
-    ["Opens the color picker. The chosen color becomes the accent."] =
-        "Öffnet die Farbauswahl. Die gewählte Farbe wird zum Akzent.",
-    ["Status colors"] = "Statusfarben",
-    ["Colors of done, ready and locked steps. \"Attune classic\" keeps Attune's own tones."] =
-        "Farben erledigter, bereiter und gesperrter Schritte. „Attune klassisch“ behält Attunes eigene Töne.",
-    ["Language"] = "Sprache",
+    ["active"] = "aktiv",
+    ["addon not installed"] = "Addon nicht installiert",
+    ["Adds our section to the EllesmereUI options window; the slash command and the minimap button open it there. Off: our own window. Takes effect after a reload."] =
+        "Fügt unseren Bereich ins EllesmereUI-Optionsfenster ein; Befehl und Minikartenknopf öffnen ihn dort. Aus: unser eigenes Fenster. Wirkt nach einem Neuladen.",
+    ["All options are in our own window (or in the EllesmereUI options when the integration is on). Command: %s"] =
+        "Alle Optionen stehen in unserem eigenen Fenster (oder in den EllesmereUI-Optionen, wenn die Einbindung an ist). Befehl: %s",
+    ["APPEARANCE"] = "AUSSEHEN",
+    ["Appearance"] = "Aussehen",
+    ["Attune classic"] = "Attune klassisch",
     ["Automatic"] = "Automatisch",
     ["Automatic uses the EllesmereUI language when it is installed, else the language of the game."] =
         "Automatisch nutzt die EllesmereUI-Sprache, wenn es installiert ist, sonst die Sprache des Spiels.",
-    ["The language changes after a reload (/reload)."] = "Die Sprache ändert sich nach einem Neuladen (/reload).",
-    ["Language changes take effect after a reload."] = "Sprachänderungen gelten nach einem Neuladen.",
-    ["Reload now"] = "Jetzt neu laden",
-    ["Attune %s · tested with: %s"] = "Attune %s · getestet mit: %s",
-    ["EllesmereUI found: accent, font and language are followed."] =
-        "EllesmereUI gefunden: Akzent, Schrift und Sprache werden übernommen.",
-    ["Print the diagnostics to the chat"] = "Diagnose in den Chat ausgeben",
-    ["Same as /battune diag."] = "Wie /battune diag.",
-    -- window skin
-    ["WINDOW"] = "FENSTER",
-    ["Window scale"] = "Fensterskalierung",
-    ["Scales Attune's whole window between 70 % and 130 %."] = "Skaliert das ganze Attune-Fenster zwischen 70 % und 130 %.",
-    ["Hide the icon view"] = "Symbolansicht ausblenden",
-    ["Always shows Attune's list and hides its switch between list and icons."] =
-        "Zeigt immer Attunes Liste und blendet den Umschalter zwischen Liste und Symbolen aus.",
-    ["BeautifulAttune options"] = "BeautifulAttune-Optionen",
-    ["Attunes"] = "Einstimmungen",
-    ["Results"] = "Ergebnisse",
-    ["Survey"] = "Umfrage",
-    -- chain skin
-    ["Accept"] = "Annehmen",
-    ["Hand in"] = "Abgeben",
-    ["Quest"] = "Quest",
-    ["Item"] = "Gegenstand",
-    ["Required level"] = "Benötigtes Level",
-    ["Reputation"] = "Ruf",
-    ["Attunement or key"] = "Zugang oder Schlüssel",
-    ["Kill"] = "Töten",
-    ["Interact"] = "Interagieren",
-    ["Click"] = "Anklicken",
-    ["Alliance"] = "Allianz",
-    ["Horde"] = "Horde",
-    ["Both factions"] = "Beide Fraktionen",
-    ["Level %s"] = "Level %s",
-    ["%d players"] = "%d Spieler",
-    ["%d of %d steps done"] = "%d von %d Schritten erledigt",
-    ["CHAIN"] = "KETTE",
-    ["Line weight"] = "Linienstärke",
-    ["Fine"] = "Fein",
-    ["Normal"] = "Normal",
-    ["Strong"] = "Kräftig",
-    ["Thickness of the connectors between the steps (2, 3 or 4 pixels at 100 %)."] =
-        "Stärke der Verbindungslinien zwischen den Schritten (2, 3 oder 4 Pixel bei 100 %).",
-    ["Dungeon picture"] = "Dungeon-Bild",
-    ["Banner"] = "Banner",
-    ["Background"] = "Hintergrund",
-    ["Off"] = "Aus",
-    ["Banner above the chain, a faint background as in Attune, or no picture."] =
-        "Banner über der Kette, dezenter Hintergrund wie bei Attune oder kein Bild.",
-    -- zoom
-    ["Zoom above 100 %"] = "Über 100 % zoomen",
-    ["Lets the zoom bar go up to 150 %. Attune itself stops at 100 %."] =
-        "Erlaubt der Zoomleiste bis 150 %. Attune selbst endet bei 100 %.",
-    ["Zoom"] = "Zoom",
-    ["Zoom out"] = "Verkleinern",
-    ["Zoom in"] = "Vergrößern",
-    ["Fit the whole chain"] = "Ganze Kette einpassen",
-    ["Click: 100 %. Ctrl+mouse wheel over the chain: zoom."] = "Klick: 100 %. Strg+Mausrad über der Kette: zoomen.",
-    -- details
-    ["Quest rewards"] = "Questbelohnungen",
-    -- search
-    ["Search: attunement, quest, item …"] = "Suchen: Zugang, Quest, Gegenstand …",
-    ["Clear search"] = "Suche leeren",
-    ["All"] = "Alles",
-    ["Attunements"] = "Zugänge",
-    ["Quests"] = "Quests",
-    ["NPCs"] = "NPCs",
-    ["Items"] = "Gegenstände",
-    ["Zones"] = "Gebiete",
-    ["Attunements & dungeons"] = "Zugänge & Dungeons",
-    ["Other steps"] = "Sonstige Schritte",
-    ["Zone"] = "Gebiet",
-    ["%d steps"] = "%d Schritte",
-    ["Only open"] = "Nur offene",
-    ["%d results"] = "%d Treffer",
-    ["No results"] = "Keine Treffer",
-    ["+ %d more …"] = "+ %d weitere …",
-    ["This entry is not in Attune's list."] = "Dieser Eintrag steht nicht in Attunes Liste.",
-    ["Attune's window is not available."] = "Attunes Fenster ist nicht verfügbar.",
-    -- options, integration, minimap (step 10)
-    ["Look, search, modules and information."] = "Aussehen, Suche, Module und Infos.",
-    ["Search & zoom"] = "Suche & Zoom",
-    ["Modules"] = "Module",
-    ["SEARCH"] = "SUCHE",
-    ["ZOOM"] = "ZOOM",
-    ["Mark matches in the chain"] = "Treffer in der Kette markieren",
-    ["While you search, matching cards of the open chain get an accent frame and the others are dimmed."] =
-        "Während einer Suche bekommen passende Karten der offenen Kette einen Rahmen in der Akzentfarbe, die übrigen werden abgedunkelt.",
-    ["Only open steps"] = "Nur offene Schritte",
-    ["Hides what is already done from the results. Same as the switch in the result list."] =
-        "Blendet Erledigtes in den Treffern aus. Wie der Schalter in der Ergebnisliste.",
-    ["Filter"] = "Filter",
-    ["Which kind of entries the search shows. Same as the chips in the result list."] =
-        "Welche Art von Einträgen die Suche zeigt. Wie die Filter-Chips in der Ergebnisliste.",
-    ["Click into the search field above the list, or type and use the arrow keys, Enter and Esc."] =
-        "Ins Suchfeld über der Liste klicken und tippen; Pfeiltasten, Eingabe und Esc steuern die Treffer.",
-    ["The zoom bar sits at the top right of the chain: minus, percent, plus and \"fit the whole chain\". Ctrl + mouse wheel over the chain zooms as well (10 % steps, 5 % below 50 %)."] =
-        "Die Zoomleiste steht oben rechts über der Kette: Minus, Prozent, Plus und „Ganze Kette einpassen“. Strg + Mausrad über der Kette zoomt ebenfalls (10-%-Schritte, unter 50 % 5 %).",
-    ["SKIN MODULES"] = "SKIN-MODULE",
-    ["Each part of the skin can be switched off. Changes take effect after a reload; Attune itself keeps working either way."] =
-        "Jeder Teil des Skins lässt sich abschalten. Änderungen wirken nach dem Neuladen; Attune selbst funktioniert in jedem Fall weiter.",
-    ["Window"] = "Fenster",
-    ["Flat frame, header with the view switch, status bar and survey menu. The search needs it."] =
-        "Flacher Rahmen, Kopfzeile mit Ansichtsumschalter, Statusleiste und Umfrage-Menü. Die Suche braucht dieses Modul.",
-    ["List"] = "Liste",
-    ["Rows of Attune's list: sections, icons, levels and progress."] =
-        "Zeilen der Attune-Liste: Abschnitte, Symbole, Stufen und Fortschritt.",
-    ["Chain"] = "Kette",
-    ["Cards, connectors, the head card and the dungeon picture."] =
-        "Karten, Verbindungslinien, Kopfkarte und Dungeon-Bild.",
-    ["Zoom bar"] = "Zoomleiste",
-    ["Zoom bar, fit button and Ctrl + mouse wheel; zoom from 10 % to 150 %."] =
-        "Zoomleiste, Einpassen-Knopf und Strg + Mausrad; Zoom von 10 % bis 150 %.",
-    ["Search"] = "Suche",
-    ["Search field above the list with filters, result list and jump to the card."] =
-        "Suchfeld über der Liste mit Filtern, Ergebnisliste und Sprung zur Karte.",
-    ["Quest details"] = "Quest-Details",
-    ["Quest detail panel, map, rewards and the quest giver hint."] =
-        "Quest-Detailpanel, Karte, Belohnungen und der Quest-Geber-Hinweis.",
-    ["The results table, its choices and the level slider."] =
-        "Die Ergebnistabelle, ihre Auswahlkreise und der Stufenregler.",
-    ["GENERAL"] = "ALLGEMEIN",
-    ["Show the minimap button"] = "Minikarten-Knopf anzeigen",
-    ["Left-click opens or closes Attune, right-click the options. Drag it to move it along the minimap."] =
-        "Linksklick öffnet oder schließt Attune, Rechtsklick die Optionen. Ziehen verschiebt ihn am Rand der Minikarte.",
-    ["Version notice"] = "Versionshinweis",
-    ["One chat line per session when the installed Attune version has not been tested with BeautifulAttune."] =
-        "Eine Chatzeile pro Sitzung, wenn die installierte Attune-Version nicht mit BeautifulAttune getestet ist.",
+    ["Automatic uses the language of the game."] = "Automatisch nutzt die Sprache des Spiels.",
+    ["Borders"] = "Rahmen",
+    ["Buttons"] = "Knöpfe",
+    ["Class color"] = "Klassenfarbe",
+    ["Classic"] = "Klassisch",
+    ["Click a color to use it as the accent."] = "Klicke eine Farbe an, um sie als Akzent zu nutzen.",
+    ["Close"] = "Schließen",
+    ["Code ready: Ctrl+C copies it. Import pastes it on another account or for a friend."] =
+        "Code bereit: Strg+C kopiert ihn. Mit „Importieren“ fügst du ihn auf einem anderen Account oder bei Freunden ein.",
+    ["COLORS"] = "FARBEN",
+    ["COMMANDS"] = "BEFEHLE",
+    ["Commands:"] = "Befehle:",
+    ["CONTRAST"] = "KONTRAST",
+    ["Copies the colors of the theme in use into a new own theme and switches to it."] =
+        "Kopiert die Farben des aktiven Themes in ein neues eigenes Theme und schaltet darauf um.",
+    ["Dark"] = "Dunkel",
+    ["Dark or light: decides how hover and tracks are shaded."] =
+        "Dunkel oder hell: bestimmt, wie Hover und Leisten schattiert werden.",
+    ["Delete"] = "Löschen",
+    ["Drag: move along the minimap"] = "Ziehen: am Rand der Minikarte verschieben",
+    ["Each pack skins one addon or a group of addons. A pack whose addon is not installed stays asleep. Changes take effect after a reload."] =
+        "Jedes Paket gestaltet ein Addon oder eine Gruppe von Addons. Ein Paket, dessen Addon fehlt, bleibt still. Änderungen wirken nach einem Neuladen.",
+    ["EllesmereUI accent"] = "EllesmereUI-Akzent",
+    ["EllesmereUI font"] = "EllesmereUI-Schrift",
+    ["EllesmereUI found: accent, font and language can follow it."] =
+        "EllesmereUI gefunden: Akzent, Schrift und Sprache können ihm folgen.",
+    ["EllesmereUI is missing or too old (no plugin API)."] =
+        "EllesmereUI fehlt oder ist zu alt (keine Plugin-Schnittstelle).",
+    ["EllesmereUI is not loaded. %s options opens our own window."] =
+        "EllesmereUI ist nicht geladen. %s options öffnet unser eigenes Fenster.",
+    ["EllesmereUI not found: own window and own look."] =
+        "EllesmereUI nicht gefunden: eigenes Fenster und eigenes Aussehen.",
+    ["Ember"] = "Glut",
+    ["Emerald"] = "Smaragd",
+    ["Export"] = "Exportieren",
+    ["failed"] = "fehlgeschlagen",
+    ["Font"] = "Schrift",
+    ["Font of all our texts."] = "Schrift aller unserer Texte.",
+    ["Font of all our texts. \"EllesmereUI font\" follows the font set in EllesmereUI (only while it is installed and enabled)."] =
+        "Schrift aller unserer Texte. „EllesmereUI-Schrift“ folgt der in EllesmereUI gewählten Schrift (nur solange es installiert und aktiv ist).",
+    ["Frost"] = "Frost",
+    ["Game font"] = "Spielschrift",
+    ["GearQuest, SkillUp, Whisper, Waypoint"] = "GearQuest, SkillUp, Whisper, Waypoint",
+    ["General"] = "Allgemein",
+    ["good"] = "gut",
+    ["Graphite"] = "Graphit",
+    ["Header area"] = "Kopfbereich",
+    ["Headings"] = "Überschriften",
+    ["Headings on the header area"] = "Überschriften im Kopfbereich",
+    ["High contrast"] = "Hoher Kontrast",
+    ["Highlight color of every theme and of every skin: headings, lines, arrows, buttons and switches."] =
+        "Hervorhebungsfarbe aller Themes und Skins: Überschriften, Linien, Pfeile, Knöpfe und Schalter.",
+    ["Import"] = "Importieren",
+    ["Imported as a new own theme."] = "Als neues eigenes Theme importiert.",
+    ["Info"] = "Info",
+    ["Input fields"] = "Eingabefelder",
     ["Integrate into EllesmereUI"] = "In EllesmereUI einbinden",
+    ["INTEGRATION"] = "EINBINDUNG",
+    ["Kind"] = "Art",
+    ["Language"] = "Sprache",
+    ["LANGUAGE"] = "SPRACHE",
+    ["Left-click opens the options, right-click the quick actions. Drag it to move it along the minimap."] =
+        "Linksklick öffnet die Optionen, Rechtsklick die Schnellaktionen. Ziehen verschiebt ihn am Rand der Minikarte.",
+    ["Left-click: options"] = "Linksklick: Optionen",
+    ["Light"] = "Hell",
+    ["Look of our own windows and of the skinned windows that follow a theme (Attune)."] =
+        "Aussehen unserer eigenen Fenster und der gestalteten Fenster, die einem Theme folgen (Attune).",
+    ["Look, language, packs and information."] = "Aussehen, Sprache, Pakete und Informationen.",
+    ["Make your own theme from any theme, change every color and share it as a code. The theme you edit is in use, so every window shows the change at once."] =
+        "Mach aus jedem Theme dein eigenes, ändere jede Farbe und teile es als Code. Das bearbeitete Theme ist aktiv, so zeigt jedes Fenster die Änderung sofort.",
+    ["Midnight"] = "Mitternacht",
+    ["Minimap button hidden. %s minimap shows it again."] =
+        "Minikartenknopf verborgen. %s minimap zeigt ihn wieder.",
+    ["Minimap button shown."] = "Minikarten-Knopf eingeblendet.",
+    ["Modern"] = "Modern",
+    ["Name"] = "Name",
+    ["New from the current theme"] = "Neu aus aktuellem Theme",
+    ["No"] = "Nein",
+    ["No own theme yet. \"New from the current theme\" copies the theme in use; then change any color."] =
+        "Noch kein eigenes Theme. „Neu aus aktuellem Theme“ kopiert das aktive Theme, danach kannst du jede Farbe ändern.",
+    ["Nord"] = "Nord",
+    ["not part of this installation"] = "nicht Teil dieser Installation",
+    ["off"] = "aus",
+    ["Open in EllesmereUI"] = "In EllesmereUI öffnen",
+    ["Open the options"] = "Optionen öffnen",
+    ["Opens the color picker. The chosen color becomes the accent."] =
+        "Öffnet die Farbauswahl. Die gewählte Farbe wird zum Akzent.",
+    ["Options"] = "Optionen",
+    ["Own color"] = "Eigene Farbe",
+    ["Own theme"] = "Eigenes Theme",
+    ["OWN THEMES"] = "EIGENE THEMES",
+    ["Parchment"] = "Pergament",
+    ["Paste a theme code here"] = "Theme-Code hier einfügen",
+    ["Pick any color"] = "Beliebige Farbe wählen",
+    ["Print the state to the chat"] = "Zustand im Chat ausgeben",
+    ["Reload now"] = "Jetzt neu laden",
+    ["Repeat within 10 seconds to confirm."] = "Zum Bestätigen innerhalb von 10 Sekunden wiederholen.",
+    ["RESET"] = "ZURÜCKSETZEN",
+    ["Reset look and language"] = "Aussehen und Sprache zurücksetzen",
+    ["Reset the look, language and window of %s to the defaults? The interface reloads."] =
+        "Aussehen, Sprache und Fenster von %s auf die Standardwerte zurücksetzen? Die Oberfläche wird neu geladen.",
+    ["Right-click: quick actions"] = "Rechtsklick: Schnellaktionen",
+    ["Rosé"] = "Rosé",
+    ["runs in BeautifulSkins"] = "läuft in BeautifulSkins",
+    ["Secondary text"] = "Nebentext",
+    ["Secondary text on the window"] = "Nebentext auf dem Fenster",
+    ["SHARE"] = "TEILEN",
+    ["Show the minimap button"] = "Minikarten-Knopf anzeigen",
+    ["SKIN PACKS"] = "SKIN-PAKETE",
+    ["Standard"] = "Standard",
+    ["Sure?"] = "Sicher?",
+    ["Takes effect after /reload."] = "Wirkt nach /reload.",
+    ["Text"] = "Text",
+    ["Text on buttons"] = "Text auf Knöpfen",
+    ["Text on the accent"] = "Text auf dem Akzent",
+    ["Text on the window"] = "Text auf dem Fenster",
+    ["Text should reach 4.5 : 1 to stay easy to read."] =
+        "Text sollte 4,5 : 1 erreichen, damit er gut lesbar bleibt.",
+    ["That is no theme code (it starts with BT1:)."] = "Das ist kein Theme-Code (er beginnt mit BT1:).",
+    ["The code is damaged or incomplete."] = "Der Code ist beschädigt oder unvollständig.",
+    ["The color picker is not available in this client."] =
+        "Die Farbauswahl ist in diesem Client nicht verfügbar.",
     ["The EllesmereUI integration changes after a reload (/reload)."] =
         "Die EllesmereUI-Einbindung ändert sich nach dem Neuladen (/reload).",
-    ["Adds the section \"Attune Skin\" to the EllesmereUI options window; the gear and /battune open it there. Takes effect after a reload."] =
-        "Fügt dem EllesmereUI-Optionsfenster den Abschnitt „Attune-Skin“ hinzu; Zahnrad und /battune öffnen dann dort. Wirkt nach dem Neuladen.",
-    ["RESET"] = "ZURÜCKSETZEN",
-    ["Reset all options"] = "Alle Optionen zurücksetzen",
-    ["Every BeautifulAttune option back to its default, then the interface reloads. Asks first."] =
-        "Setzt jede BeautifulAttune-Option auf den Standard zurück, danach lädt die Oberfläche neu. Fragt vorher nach.",
-    ["Reset all BeautifulAttune options to their defaults? The interface reloads."] =
-        "Alle BeautifulAttune-Optionen auf den Standard zurücksetzen? Die Oberfläche wird neu geladen.",
-    ["Repeat within 10 seconds to reset all options (the interface reloads)."] =
-        "Innerhalb von 10 Sekunden wiederholen, um alle Optionen zurückzusetzen (die Oberfläche wird neu geladen).",
+    ["The EllesmereUI integration is off. Turn it on under General, then /reload."] =
+        "Die EllesmereUI-Einbindung ist aus. Unter Allgemein einschalten, dann /reload.",
+    ["The EllesmereUI section is not active (%s). Try /reload."] =
+        "Der EllesmereUI-Abschnitt ist nicht aktiv (%s). Versuche /reload.",
+    ["The EllesmereUI window cannot be opened in combat. %s options works."] =
+        "Das EllesmereUI-Fenster lässt sich im Kampf nicht öffnen. %s options funktioniert.",
+    ["the former addon is still active: switch it off and /reload"] =
+        "das frühere Addon ist noch aktiv: ausschalten und /reload",
+    ["The language changes after a reload (/reload)."] =
+        "Die Sprache ändert sich nach einem Neuladen (/reload).",
+    ["The quick brown fox jumps over the lazy dog. 0123456789"] =
+        "Zwölf Boxkämpfer jagen Viktor quer über den großen Sylter Deich. 0123456789",
+    ["Theme"] = "Theme",
+    ["Theme default"] = "Theme-Standard",
+    ["Theme editor"] = "Theme-Editor",
+    ["Theme, font, accent, language and window position back to the defaults, then the interface reloads. The options of the skins stay."] =
+        "Theme, Schrift, Akzent, Sprache und Fensterposition zurück auf Standard, danach lädt die Oberfläche neu. Die Optionen der Skins bleiben.",
+    ["too low"] = "zu niedrig",
+    ["Unknown command."] = "Unbekannter Befehl.",
+    ["Unofficial skins. Not affiliated with the authors of the skinned addons or of EllesmereUI."] =
+        "Inoffizielle Skins. Nicht verbunden mit den Autoren der gestalteten Addons oder von EllesmereUI.",
+    ["Used while the accent color is set to \"Theme default\"."] =
+        "Gilt, solange die Akzentfarbe auf „Theme-Standard“ steht.",
+    ["VERSIONS"] = "VERSIONEN",
+    ["waiting"] = "wartet",
+    ["Warning"] = "Warnung",
+    ["Warning on buttons"] = "Warnung auf Knöpfen",
+    ["Window"] = "Fenster",
+    ["Without EllesmereUI every option lives in this window. With EllesmereUI installed the same pages can also appear in its options window."] =
+        "Ohne EllesmereUI stehen alle Optionen in diesem Fenster. Mit EllesmereUI können dieselben Seiten auch in dessen Optionsfenster erscheinen.",
     ["Yes"] = "Ja",
-    ["No"] = "Nein",
-    ["COMMANDS"] = "BEFEHLE",
-    ["Open in EllesmereUI"] = "In EllesmereUI öffnen",
-    ["The same pages in the EllesmereUI options window (/battune eui)."] =
-        "Dieselben Seiten im EllesmereUI-Optionsfenster (/battune eui).",
-    ["Attune Skin"] = "Attune-Skin",
-    ["EllesmereUI is missing or too old (no plugin API)."] = "EllesmereUI fehlt oder ist zu alt (keine Plugin-Schnittstelle).",
-    ["EllesmereUI is not loaded. /battune options opens the BeautifulAttune window."] =
-        "EllesmereUI ist nicht geladen. /battune options öffnet das BeautifulAttune-Fenster.",
-    ["The EllesmereUI section is not active (%s). Try /reload."] = "Der EllesmereUI-Abschnitt ist nicht aktiv (%s). Versuche /reload.",
-    ["The EllesmereUI integration is off. Turn it on under Modules, then /reload."] =
-        "Die EllesmereUI-Einbindung ist aus. Unter „Module“ einschalten, dann /reload.",
-    ["The EllesmereUI window cannot be opened in combat. /battune options works."] =
-        "Das EllesmereUI-Fenster lässt sich im Kampf nicht öffnen. /battune options funktioniert.",
-    ["/battune options - the BeautifulAttune options window"] = "/battune options – BeautifulAttune-Optionsfenster",
-    ["/battune eui - the options in EllesmereUI"] = "/battune eui – die Optionen in EllesmereUI",
-    ["/battune minimap - show or hide the minimap button"] = "/battune minimap – Minikarten-Knopf ein- oder ausblenden",
-    ["Drag: move along the minimap"] = "Ziehen: am Rand der Minikarte verschieben",
-    ["Minimap button hidden. /battune minimap shows it again."] = "Minikarten-Knopf ausgeblendet. /battune minimap zeigt ihn wieder.",
-    ["Minimap button shown."] = "Minikarten-Knopf eingeblendet.",
-    ["Font of all BeautifulAttune texts."] = "Schrift aller BeautifulAttune-Texte.",
-    ["Automatic uses the language of the game."] = "Automatisch nutzt die Sprache des Spiels.",
 }

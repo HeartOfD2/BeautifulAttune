@@ -68,6 +68,34 @@ local function Segment(parent, labels, onPick)
     return seg
 end
 
+-- The switch for Attune's "Next" window carries its state: accent while the window is on, dim while it is off.
+local function UpdateNextButton()
+    local button = W and W.header and W.header.nextWin
+    if button then button:SetActive(A.NextWindowShown()) end
+end
+
+-- What this Attune offers decides which of the two extra header buttons are shown, and that is looked at on every
+-- refresh, not once: our window is built the first time Attune opens its own, and Attune fills in parts of itself
+-- later (its broker, for one). The visible buttons are chained left of our gear, so a hidden one leaves no gap.
+local function LayoutHeader()
+    local h = W and W.header
+    if not h or not h.attuneGear then return end
+    local options, nextWindow = A.CanOpenAttuneOptions(), A.HasNextWindow()
+    h.attuneGear:SetShown(options)
+    h.nextWin:SetShown(nextWindow)
+    local left = h.gear
+    if options then
+        h.attuneGear:ClearAllPoints()
+        h.attuneGear:SetPoint("RIGHT", left, "LEFT", -2, 0)
+        left = h.attuneGear
+    end
+    if nextWindow then
+        h.nextWin:ClearAllPoints()
+        h.nextWin:SetPoint("RIGHT", left, "LEFT", -2, 0)
+    end
+    UpdateNextButton()
+end
+
 local function Build(parts)
     local host = parts.host
     local w = { host = host, paint = {}, menuLabels = {} }
@@ -120,8 +148,22 @@ local function Build(parts)
     header.close:SetPoint("RIGHT", header, "RIGHT", -6, 0)
     header.close:HookScript("OnEnter", function(self) self:SetColorOverride("danger") end)
     header.close:HookScript("OnLeave", function(self) self:SetColorOverride(nil) end)
-    header.gear = Kit.IconButton(header, 28, "gear", function() ns.OpenOptions() end, L["BeautifulAttune options"])
+    header.gear = Kit.IconButton(header, 28, "gear", function() ns.OpenOptions() end, L["Skin options"])
     header.gear:SetPoint("RIGHT", header.close, "LEFT", -2, 0)
+    -- Left of ours: Attune's own options, then the switch for Attune's "Next" window. Both are built whatever this
+    -- Attune offers right now; LayoutHeader places and shows them (its comment says why). The switch asks for its
+    -- tooltip when it is hovered, so it can use Attune's own name for that window once Attune has it.
+    header.attuneGear = Kit.IconButton(header, 28, "gear", function() A.OpenAttuneOptions() end,
+        L["Attune's own options"])
+    header.nextWin = Kit.IconButton(header, 28, "bullets", function()
+        A.ToggleNextWindow()
+        UpdateNextButton()
+    end, function()
+        local name = A.NextWindowName()
+        return name and L["Show or hide %s"]:format(name) or L["Show or hide Attune's list of next steps"]
+    end)
+    header.attuneGear:Hide()
+    header.nextWin:Hide()
     w.paint[#w.paint + 1] = header
 
     -- status strip: top line under Attune's status text (which keeps its own frame); controls above it
@@ -354,6 +396,7 @@ local function Apply()
         A.HookScript(parts.sizerSE, "OnEnter", function() W.ctl.grip:SetColorKey("accent") end, "window")
         A.HookScript(parts.sizerSE, "OnLeave", function() W.ctl.grip:SetColorKey("textDim") end, "window")
     end
+    LayoutHeader()
     OnView()
     ApplyScale()
 end
