@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (2026-11-06)
+
+- Tested with Attune 16001-37.
+- Attune's new "Will not do" checkbox at the bottom right of the chain has the same flat look, and attunements you set
+  aside are greyed in the list.
+- Character Progression chains: the cards show the name of each goal, and their counts update while the chain is open.
+- Fix: a character without a second name is recognised.
+
 ## 0.2.0 (2026-11-05)
 
 - Built from the same source as BeautifulSkins: the Attune skin now lives in the folder `BeautifulAttune_Skin`, which
