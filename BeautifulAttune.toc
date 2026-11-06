@@ -5,6 +5,7 @@
 ## Notes-deDE: Ein modernes, durchsuchbares Aussehen für das Addon Attune. EllesmereUI ist optional.
 ## Author: HeartOfD2
 ## Version: 0.2.1
+## X-Curse-Project-ID: 1754752
 ## X-Website: https://github.com/HeartOfD2/BeautifulAttune
 ## Category: Quests
 ## IconTexture: Interface\AddOns\BeautifulAttune\Media\Icon
