@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 (2026-11-10)
+
+- Works with Attune 16001-39.
+- Search: attunements in a category you switched off in Attune's options (new in 16001-39) are no longer found, as
+  they are no longer in Attune's list.
+- Search: with Attune's new "Deadmines as DM" option, the short code shown and searched follows it (VC or DM, and
+  "Dire Maul" for the two Dire Maul entries).
+
 ## 0.2.1 (2026-11-06)
 
 - Tested with Attune 16001-37.
