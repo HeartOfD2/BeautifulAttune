@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 (2026-11-19)
+
+- Works with Attune 16001-43. Search finds the quests of the new dungeons (The Drowned City, Krol'dok Stronghold,
+  Alcaz Prison, Blackmaw Hold, The Shaper's Terrace).
+
 ## 0.2.2 (2026-11-10)
 
 - Works with Attune 16001-39.
