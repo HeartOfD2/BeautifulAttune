@@ -15,6 +15,7 @@
 Pack.lua
 Locales\enUS.lua
 Locales\deDE.lua
+Locales\zhCN.lua
 Core.lua
 Adapters\AttuneCompat.lua
 Adapters\Attune.lua
