@@ -15,7 +15,7 @@ local DB_VERSION = 2
 local defaults = {
     version = DB_VERSION,
     settings = {
-        language = "auto",      -- "auto" | "enUS" | "deDE", applied at load
+        language = "auto",      -- "auto" | "enUS" | "deDE" | "zhCN", applied at load
         integrateEUI = true,    -- options section in the EllesmereUI options window, applied at load
         minimap = { hide = false, angle = 215 },
         options = {},           -- options window geometry and last page
@@ -138,7 +138,7 @@ end
 -- Language: the setting, else the language of EllesmereUI (when loaded), else the client, else English.
 local function ChooseLocale(choice)
     local locale
-    if choice == "enUS" or choice == "deDE" then
+    if choice == "enUS" or choice == "deDE" or choice == "zhCN" then
         locale = choice
     else
         local preferred = type(ns.PreferredLocale) == "function" and ns.PreferredLocale() or nil

@@ -17,6 +17,7 @@
 
 Locales\enUS.lua
 Locales\deDE.lua
+Locales\zhCN.lua
 Package.lua
 Core\Core.lua
 Core\Env.lua

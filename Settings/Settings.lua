@@ -41,7 +41,7 @@ local function ThemeValues()
 end
 
 local function LanguageValues()
-    return { auto = L["Automatic"], enUS = "English", deDE = "Deutsch" }, { "auto", "enUS", "deDE" }
+    return { auto = L["Automatic"], enUS = "English", deDE = "Deutsch", zhCN = "简体中文" }, { "auto", "enUS", "deDE", "zhCN" }
 end
 
 -- The palette marks a color only while the accent is an own color.
