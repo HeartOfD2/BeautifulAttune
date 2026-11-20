@@ -31,10 +31,10 @@ ns.locales.zhCN = {
     ["Attune's window in a modern, flat look with search and zoom."] =
         "为 Attune 窗口提供现代扁平化外观、搜索和缩放功能。",
     ["Attune's window is not available."] = "Attune 窗口当前不可用。",
-    ["Attunement or key"] = "门任务或钥匙",
-    ["Attunements"] = "门任务",
-    ["Attunements & dungeons"] = "门任务与地下城",
-    ["Attunes"] = "门任务",
+    ["Attunement or key"] = "任务链或钥匙",
+    ["Attunements"] = "任务链",
+    ["Attunements & dungeons"] = "任务链与地下城",
+    ["Attunes"] = "任务链",
     ["Background"] = "背景",
     ["Banner"] = "横幅",
     ["Banner above the chain, a faint background as in Attune, or no picture."] =
@@ -128,7 +128,7 @@ ns.locales.zhCN = {
     ["Search & zoom"] = "搜索与缩放",
     ["Search field above the list with filters, result list and jump to the card."] =
         "列表上方的搜索框，包含筛选器、结果列表与卡片跳转。",
-    ["Search: attunement, quest, item …"] = "搜索：门任务、任务、物品 …",
+    ["Search: attunement, quest, item …"] = "搜索：任务链、任务、物品 …",
     ["Show or hide %s"] = "显示或隐藏 %s",
     ["Show or hide Attune's list of next steps"] = "显示或隐藏 Attune 的“下一步”列表",
     ["SKIN MODULES"] = "皮肤模块",
